@@ -1,8 +1,8 @@
 # Example config
-from jhubauthenticators import RegexUsernameParser, JSONParser
+from jhubauthenticators import RegexUsernameParser
 from ldap_hooks import setup_ldap_entry_hook
-from ldap_hooks import LDAP, LDAP_SEARCH_ATTRIBUTE_QUERY, SPAWNER_SUBMIT_DATA, \
-    INCREMENT_ATTRIBUTE
+from ldap_hooks import LDAP, LDAP_SEARCH_ATTRIBUTE_QUERY, \
+    SPAWNER_SUBMIT_DATA, INCREMENT_ATTRIBUTE
 c = get_config()
 
 c.JupyterHub.ip = '0.0.0.0'
@@ -21,7 +21,8 @@ c.HeaderAuthenticator.allowed_headers = {'auth': 'Remote-User'}
 c.HeaderAuthenticator.header_parser_classes = {'auth': RegexUsernameParser}
 c.HeaderAuthenticator.user_external_allow_attributes = ['data']
 # Email regex
-RegexUsernameParser.username_extract_regex = '([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)'
+RegexUsernameParser.username_extract_regex = '([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]' \
+    '+\.[a-zA-Z0-9-.]+)'
 
 
 # Define LDAP connection options
@@ -48,15 +49,18 @@ LDAP.set_spawner_attributes = {
                     'NB_UID': '{uidNumber}'},
 }
 
-# Attributes used to check whether the ldap data of type object_classes already exists
+# Attributes used to check whether the ldap data
+# of type object_classes already exists
 # LDAP.unique_object_attributes = ['emailAddress']
-LDAP.search_attribute_queries = [{'search_base': LDAP.base_dn,
-                                  'search_filter': '(objectclass=X-nextUserIdentifier)',
-                                  'attributes': ['uidNumber']}]
+LDAP.search_attribute_queries = [
+    {'search_base': LDAP.base_dn,
+     'search_filter': '(objectclass=X-nextUserIdentifier)',
+     'attributes': ['uidNumber']}
+]
 
+modify_dn = 'cn=uidNext' + ',' + LDAP.base_dn
 LDAP.search_result_operation = {'uidNumber': {'action': INCREMENT_ATTRIBUTE,
-                                              'modify_dn': 'cn=uidNext'
-                                              + ',' + LDAP.base_dn}}
+                                              'modify_dn': modify_dn}}
 
 # Submit object settings
 LDAP.object_classes = ['X-certsDistinguishedName', 'PosixAccount']

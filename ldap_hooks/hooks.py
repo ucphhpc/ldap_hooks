@@ -1,8 +1,8 @@
 import logging
 import copy
 from tornado import gen
-from ldap3 import Server, Connection, MODIFY_DELETE, MODIFY_ADD, BASE, ALL_ATTRIBUTES, \
-    ALL_OPERATIONAL_ATTRIBUTES
+from ldap3 import Server, Connection, MODIFY_DELETE, MODIFY_ADD, \
+    BASE, ALL_ATTRIBUTES
 from ldap3.core.exceptions import LDAPException
 from ldap3.utils.log import set_library_log_detail_level, BASIC
 from traitlets import Unicode, Dict, List, Tuple
@@ -23,39 +23,52 @@ SEARCH_RESULT_OPERATIONS = (INCREMENT_ATTRIBUTE)
 
 class LDAP(LoggingConfigurable):
 
-    url = Unicode("", allow_none=False, config=True,
+    url = Unicode(trait=Unicode(),
+                  allow_none=False,
+                  config=True,
                   help=dedent("""
     URL/IP of the LDAP server. E.g. 127.0.0.1
     """))
 
-    user = Unicode(trait=Unicode(), allow_none=False, config=True,
+    user = Unicode(trait=Unicode(),
+                   allow_none=False,
+                   config=True,
                    help=dedent("""
     Distinguished Name String that is used to connect to the LDAP server.
     E.g. cn=admin,dc=example,dc=org
     """))
 
-    password = Unicode(None, allow_none=True, config=True,
+    password = Unicode(trait=Unicode(),
+                       allow_none=True,
+                       config=True,
                        help=dedent("""
     Password used to authenticate as user.
     """))
 
-    ssl_cert_path = Unicode(None, allow_none=True, config=True,
+    ssl_cert_path = Unicode(trait=Unicode(),
+                            allow_none=True,
+                            config=True,
                             help=dedent("""
     A path to the SSL certificate that is used to authenticate
     as the 'user' with.
     """))
 
-    base_dn = Unicode(None, allow_none=False, config=True,
+    base_dn = Unicode(trait=Unicode(),
+                      allow_none=False,
+                      config=True,
                       help=dedent("""
-
     """))
 
-    object_classes = List(trait=Unicode(), default_value=None, allow_none=False,
-                          config=True, help=dedent("""
+    object_classes = List(trait=Unicode(),
+                          default_value=None,
+                          allow_none=False,
+                          config=True,
+                          help=dedent("""
     Which LDAP object classes should be used for the add operation.
     """))
 
-    object_attributes = Dict(trait=Unicode(), traits={Unicode(): Unicode()},
+    object_attributes = Dict(trait=Unicode(),
+                             traits={Unicode(): Unicode()},
                              default_value={},
                              help=dedent("""
     Which attributes should be attached to a specified LDAP object_class.
@@ -65,14 +78,14 @@ class LDAP(LoggingConfigurable):
                                     default_value=[],
                                     help=dedent("""
     List of attributes inside the defined object_classes which are unique
-     and can't have duplicates in the DIT with the same object classes
+    and can't have duplicates in the DIT with the same object classes.
     """))
 
     replace_object_with = Dict(trait=Unicode(), traits={Unicode(): Unicode()},
                                default_value={},
                                help=dedent("""
     A dictionary of key value pairs that should be used to prepare the submit
-     object string
+    object string.
 
     E.g. {'/': '+'}
     Which translates the following distinguished name as:
@@ -84,7 +97,8 @@ class LDAP(LoggingConfigurable):
     name_strip_chars = List(trait=Unicode(),
                             default_value=['/', '+', '*', ',', '.', '!', ' '],
                             help=dedent("""
-    A list of characters that should be lstriped and rstriped from the submit name
+    A list of characters that should be lstriped and rstriped from
+    the submit name.
     """))
 
     submit_spawner_attribute = Unicode(trait=Unicode(),
@@ -118,18 +132,21 @@ class LDAP(LoggingConfigurable):
         ('ldap_object_dict_key',)
     """))
 
-    dynamic_attributes = Dict(trait=Unicode(), traits={Unicode(): Unicode()},
+    dynamic_attributes = Dict(trait=Unicode(),
+                              traits={Unicode(): Unicode()},
                               default_value={},
                               help=dedent("""
     A dict of dynamic attributes that is generated from one of
     DYNAMIC_ATTRIBUTE_METHODS methods to extract values.
     """))
 
-    search_attribute_queries = List(trait=Dict(), traits=[{Unicode(): Unicode()}],
+    search_attribute_queries = List(trait=Dict(),
+                                    traits=[{Unicode(): Unicode()}],
                                     default_value=[{}],
                                     help=dedent("""
-    A list of expected variables to be extracted and prepared from the base_dn LDAP DIT,
-    generates the attributes expected by LDAP_SEARCH_ATTRIBUTE_QUERY
+    A list of expected variables to be extracted and prepared
+    from the base_dn LDAP DIT, generates the attributes
+    expected by LDAP_SEARCH_ATTRIBUTE_QUERY.
     """))
 
     search_result_operation = Dict(trait=Unicode(),
@@ -143,7 +160,8 @@ class LDAP(LoggingConfigurable):
                        'modify_dn': 'cn=uidNext,dc=example,dc=org'}}
     """))
 
-    set_spawner_attributes = Dict(trait=Unicode(), traits={Unicode(): Unicode()},
+    set_spawner_attributes = Dict(trait=Unicode(),
+                                  traits={Unicode(): Unicode()},
                                   default_value={},
                                   help=dedent("""
     A dict of attributes that should be set on the passed in spawner object
@@ -179,7 +197,7 @@ class ConnectionManager:
                 self.connection = Connection(server)
         except LDAPException as err:
             self.connected = False
-            if self.logger is not None and getattr(self.logger, 'error', None) \
+            if self.logger is not None and getattr(self.logger, 'error', None)\
                     and callable(self.logger.error):
                 self.logger.error("LDAP - Failed to create a connection, "
                                   "exception: {}".format(err))
@@ -188,13 +206,16 @@ class ConnectionManager:
         try:
             self.connected = self.connection.bind()
             if not self.connected:
-                if self.logger is not None and getattr(self.logger, 'error', None) \
+                if self.logger is not None and getattr(self.logger, 'error',
+                                                       None) \
                         and callable(self.logger.error):
                     self.logger.error("LDAP - bind executed without error, "
-                                      "but bind still failed: {}".format(self.connected))
+                                      "but bind still failed: {}".format(
+                                          self.connected
+                                      ))
         except LDAPException as err:
             self.connected = False
-            if self.logger is not None and getattr(self.logger, 'error', None) \
+            if self.logger is not None and getattr(self.logger, 'error', None)\
                     and callable(self.logger.error):
                 self.logger.error("LDAP - Failed to bind connection, "
                                   "exception: {}".format(err))
@@ -210,7 +231,7 @@ class ConnectionManager:
         try:
             self.connection = self.connection.rebind(user_args)
         except LDAPException as err:
-            if self.logger is not None and getattr(self.logger, 'error', None) \
+            if self.logger is not None and getattr(self.logger, 'error', None)\
                     and callable(self.logger.error):
                 self.logger.error("LDAP - Failed to rebind connection, "
                                   "exception: {}".format(err))
@@ -284,10 +305,10 @@ def perform_search_result_operation(logger, conn_manager, base_dn,
     if operation['action'] == INCREMENT_ATTRIBUTE:
         valid_types = (int, float)
         if not isinstance(attr_val, valid_types):
-            logger.error("LDAP - Invalid datatype: {} supplied to operation: {}, "
-                         "allowed are: {}".format(type(attr_val),
-                                                  INCREMENT_ATTRIBUTE,
-                                                  valid_types))
+            logger.error("LDAP - Invalid datatype: {} supplied to "
+                         "operation: {}, allowed are: {}".format(
+                             type(attr_val), INCREMENT_ATTRIBUTE,
+                             valid_types))
             return False
         if 'modify_dn' not in operation:
             logger.error("LDAP - Missing required modify_dn key in: {}".format(
@@ -312,7 +333,8 @@ def perform_search_result_operation(logger, conn_manager, base_dn,
 def get_interpolated_dynamic_attributes(logger, sources, dynamic_attributes):
     set_attributes = {}
     for attr_key, attr_val in dynamic_attributes.items():
-        # Check sources for LDAP_SEARCH_ATTRIBUTE_QUERY key response with values
+        # Check sources for LDAP_SEARCH_ATTRIBUTE_QUERY
+        # key response with values
         val = None
         if attr_val == LDAP_SEARCH_ATTRIBUTE_QUERY:
             if LDAP_SEARCH_ATTRIBUTE_QUERY in sources \
@@ -328,8 +350,9 @@ def get_interpolated_dynamic_attributes(logger, sources, dynamic_attributes):
                 val = attribute
         if not val:
             logger.error("LDAP - Missing {} in {} which is required to"
-                         " get_interpolated_dynamic_attributes".format(attr_val,
-                                                                       sources))
+                         " get_interpolated_dynamic_attributes".format(
+                             attr_val,
+                             sources))
             return False
         set_attributes[attr_key] = val
     return set_attributes
@@ -357,9 +380,11 @@ def setup_ldap_entry_hook(spawner):
 
     # TODO, copy entire default config options dynamically
     instance.dynamic_attributes = copy.deepcopy(instance.dynamic_attributes)
-    instance.set_spawner_attributes = copy.deepcopy(instance.set_spawner_attributes)
+    instance.set_spawner_attributes = copy.deepcopy(
+        instance.set_spawner_attributes)
     instance.object_attributes = copy.deepcopy(instance.object_attributes)
-    instance.search_result_operation = copy.deepcopy(instance.search_result_operation)
+    instance.search_result_operation = copy.deepcopy(
+        instance.search_result_operation)
 
     logging.basicConfig(filename='client_application.log', level=logging.DEBUG)
     set_library_log_detail_level(BASIC)
@@ -375,25 +400,26 @@ def setup_ldap_entry_hook(spawner):
     if not ldap_data:
         spawner.log.error("LDAP - The spawner object: {} did not have "
                           "the specified attribute: {}".format(
-                              spawner.user.__dict__, instance.submit_spawner_attribute))
+                              spawner.user.__dict__,
+                              instance.submit_spawner_attribute))
         return False
 
     if isinstance(ldap_data, dict):
         if not instance.submit_spawner_attribute_keys:
-            spawner.log.error("LDAP - Found attribute: {} in spawner object: {}, "
-                              "of type: {}, requires that submit_spawner"
-                              "_attribute_keys"
-                              "is set to extract the value from the "
-                              "dictionary".format(instance.submit_spawner_attribute,
-                                                  spawner, type(ldap_data)))
+            spawner.log.error("LDAP - Found attribute: {} in spawner object: "
+                              "{}, of type: {}, requires that submit_spawner"
+                              "_attribute_keys is set to extract the value "
+                              "from the dictionary".format(
+                                  instance.submit_spawner_attribute,
+                                  spawner, type(ldap_data)))
             return False
 
         new_ldap_data = tuple_dict_select(
             instance.submit_spawner_attribute_keys,
             ldap_data)
         if not new_ldap_data:
-            spawner.log.error("LDAP - Failed to extract the specified dict tuple "
-                              "string: {} from dict: {}".format(
+            spawner.log.error("LDAP - Failed to extract the specified dict "
+                              "tuple string: {} from dict: {}".format(
                                   instance.submit_spawner_attribute_keys,
                                   ldap_data
                               ))
@@ -402,7 +428,8 @@ def setup_ldap_entry_hook(spawner):
         ldap_data = new_ldap_data
         if not isinstance(ldap_data, str):
             spawner.log.error("LDAP - {} is of incorrect type, requires: {} "
-                              "found: {}".format(ldap_data, str, type(ldap_data)))
+                              "found: {}".format(ldap_data, str,
+                                                 type(ldap_data)))
             return False
 
     # Parse spawner user LDAP string to be parsed for submission
@@ -426,7 +453,7 @@ def setup_ldap_entry_hook(spawner):
                               "supported objectClasses {}".format(response))
             return False
 
-        # spawner.log.debug("LDAP - supported objectClasses {}".format(response))
+        spawner.log.debug("LDAP - supported objectClasses {}".format(response))
         found = []
         for entry in response:
             object_classes = entry['attributes']['objectClasses']
@@ -475,14 +502,15 @@ def setup_ldap_entry_hook(spawner):
 
         if instance.unique_object_attributes:
             # Specific attributes to check for existing dn
-            search_attributes = ''.join(['({}={})'.format(attr.lower(),
-                                                          ldap_dict[attr])
-                                         for attr in instance.unique_object_attributes
-                                         if attr in ldap_dict])
+            search_attributes = ''.join([
+                '({}={})'.format(attr.lower(), ldap_dict[attr])
+                for attr in instance.unique_object_attributes
+                if attr in ldap_dict])
         else:
             # Use every attribute to check for existing dn
             search_attributes = ''.join(['({}={})'.format(ldap_key, ldap_value)
-                                         for ldap_key, ldap_value in ldap_dict.items()])
+                                         for ldap_key, ldap_value in
+                                         ldap_dict.items()])
 
         # unique attributes search filter
         if search_filter:
@@ -507,17 +535,21 @@ def setup_ldap_entry_hook(spawner):
             response = conn_manager.get_response()
             if len(response) > 1:
                 spawner.log.error("LDAP - multiple entries: {} "
-                                  "were found with: {}".format(response, search_filter))
+                                  "were found with: {}".format(response,
+                                                               search_filter))
                 return False
 
             attributes = conn_manager.get_response_attributes()
             if not attributes:
                 spawner.log.error("LDAP - No attributes were returned from "
-                                  "existing dn: {} with search_filer: {}".format(
-                                      ldap_data, search_filter))
+                                  "existing dn: {} "
+                                  "with search_filer: {}".format(ldap_data,
+                                                                 search_filter)
+                                  )
                 return False
 
-            spawner.log.info("LDAP - Retrived attributes {}".format(attributes))
+            spawner.log.info(
+                "LDAP - Retrived attributes {}".format(attributes))
             # Extract attributes from existing object
             sources = {LDAP_SEARCH_ATTRIBUTE_QUERY: attributes,
                        SPAWNER_SUBMIT_DATA: ldap_dict}
@@ -525,14 +557,15 @@ def setup_ldap_entry_hook(spawner):
                 spawner.log, sources, instance.dynamic_attributes
             )
             if not instance.dynamic_attributes:
-                spawner.log.error("LDAP - Failed to setup dynamic_attributes: {} "
-                                  "with attribute_dict: {}".format(
+                spawner.log.error("LDAP - Failed to setup dynamic_attributes: "
+                                  "{} with attribute_dict: {}".format(
                                       instance.dynamic_attributes,
                                       attributes
                                   ))
                 return False
             # Setup set_spawner_attributes
-            recursive_format(instance.set_spawner_attributes, instance.dynamic_attributes)
+            recursive_format(instance.set_spawner_attributes,
+                             instance.dynamic_attributes)
             update_spawner_attributes(spawner, instance.set_spawner_attributes)
             return True
 
@@ -540,10 +573,12 @@ def setup_ldap_entry_hook(spawner):
         # Get extract variables
         for q in instance.search_attribute_queries:
             query = copy.deepcopy(q)
-            spawner.log.debug("LDAP - extract attribute with query: {}".format(query))
+            spawner.log.debug(
+                "LDAP - extract attribute with query: {}".format(query))
             if 'search_base' not in query or 'search_filter' not in query:
-                spawner.log.error("LDAP - search_base or search_filter is missing from "
-                                  "search_attribute_queries: {}".format(query))
+                spawner.log.error("LDAP - search_base or search_filter "
+                                  "is missing from search_attribute_queries: "
+                                  "{}".format(query))
                 return False
             success = search_for(conn_manager.get_connection(),
                                  query.pop('search_base', ''),
@@ -551,16 +586,17 @@ def setup_ldap_entry_hook(spawner):
                                  **query)
             if not success:
                 spawner.log.error("LDAP - failed to use the query: {} "
-                                  "for extracting attributes, response was: {}".format(
-                                      query,
-                                      conn_manager.get_response()))
+                                  "for extracting attributes, response was:"
+                                  "{}".format(query,
+                                              conn_manager.get_response()))
                 return False
 
             # get responses
             response = conn_manager.get_response()
             if len(response) > 1:
                 spawner.log.error("LDAP - multiple entries: {} "
-                                  "were found with: {}".format(response, search_filter))
+                                  "were found with: {}".format(response,
+                                                               search_filter))
                 return False
 
             sources = {}
@@ -599,8 +635,10 @@ def setup_ldap_entry_hook(spawner):
             return False
 
         # Format dn provided variables
-        recursive_format(instance.set_spawner_attributes, instance.dynamic_attributes)
-        recursive_format(instance.object_attributes, instance.dynamic_attributes)
+        recursive_format(instance.set_spawner_attributes,
+                         instance.dynamic_attributes)
+        recursive_format(instance.object_attributes,
+                         instance.dynamic_attributes)
 
         spawner.log.debug("LDAP - prepared spawner attributes {}".format(
             instance.set_spawner_attributes
@@ -627,22 +665,27 @@ def setup_ldap_entry_hook(spawner):
             return False
 
         spawner.log.info("LDAP - User: {} created: {} "
-                         "at: {} with response: {}".format(spawner.user.name,
-                                                           ldap_data,
-                                                           instance.url,
-                                                           conn_manager.get_response()))
+                         "at: {} with response: {}".format(
+                             spawner.user.name,
+                             ldap_data,
+                             instance.url,
+                             conn_manager.get_response()))
         # Check that it exists in the db
         search_base = instance.base_dn
-        search_filter = '(&{}'.format(''.join(['(objectclass={})'.format(object_class)
-                                               for object_class in
-                                               instance.object_classes]))
+        search_filter = '(&{}'.format(
+            ''.join(['(objectclass={})'.format(object_class)
+                     for object_class in
+                     instance.object_classes])
+        )
+
         search_filter += '{})'.format(
             ''.join(['({}={})'.format(attr_key, attr_val)
-                     for attr_key, attr_val in instance.object_attributes.items()])
+                     for attr_key, attr_val in
+                     instance.object_attributes.items()])
         )
         spawner.log.debug("LDAP - search_for, "
-                          "search_base {}, search_filter {}".format(search_base,
-                                                                    search_filter))
+                          "search_base {}, search_filter {}".format(
+                              search_base, search_filter))
         success = search_for(conn_manager.get_connection(),
                              search_base,
                              search_filter)
@@ -651,14 +694,16 @@ def setup_ldap_entry_hook(spawner):
                 (search_base, search_filter), instance.url)
             )
             return False
-        spawner.log.info("LDAP - found {} in {}".format(conn_manager.get_response(),
-                                                        instance.url))
+        spawner.log.info("LDAP - found {} in {}".format(
+            conn_manager.get_response(), instance.url)
+        )
 
         # Pass prepared attributes to spawner attributes
         update_spawner_attributes(spawner, instance.set_spawner_attributes)
         return True
     else:
-        spawner.log.error("LDAP - Failed to connect to {}".format(instance.url))
+        spawner.log.error(
+            "LDAP - Failed to connect to {}".format(instance.url))
         return False
 
     return None
