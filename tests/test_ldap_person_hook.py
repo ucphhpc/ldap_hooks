@@ -53,13 +53,13 @@ ldap_cont = {'image': LDAP_IMAGE, 'name': LDAP_IMAGE_NAME,
                               type='bind')],
              'ports': {389: 389, 636: 636},
              'detach': 'True',
-             'environement': {'LDAP_DOMAIN': 'example.org',
-                              'LDAP_ADMIN_PASSWORD': 'dummyldap_password',
-                              'LDAP_CONFIG_PASSWORD': 'dummyldap_password',
-                              'LDAP_RFC2307BIS_SCHEMA': 'true'}}
+             'environment': {'LDAP_DOMAIN': 'example.org',
+                             'LDAP_ADMIN_PASSWORD': 'dummyldap_password',
+                             'LDAP_CONFIG_PASSWORD': 'dummyldap_password',
+                             'LDAP_RFC2307BIS_SCHEMA': 'true'}}
 
 
-@pytest.mark.parametrize('container', [jhub_cont, ldap_cont],
+@pytest.mark.parametrize('container', [jhub_cont],
                          indirect=['container'])
 def test_ldap_person_hook(container):
     """
