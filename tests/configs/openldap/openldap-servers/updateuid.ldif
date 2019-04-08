@@ -1,0 +1,7 @@
+dn: cn=uidNext,dc=migrid,dc=org
+changetype: modify
+delete: uidNumber
+uidNumber: 2
+-
+add: uidNumber
+uidNumber: 3

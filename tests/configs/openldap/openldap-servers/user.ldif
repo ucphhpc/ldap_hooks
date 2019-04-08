@@ -1,0 +1,9 @@
+dn: cn=Rasmus6,dc=migrid,dc=org
+objectClass: top
+objectClass: x-certsDistinguishedName
+objectClass: PosixAccount
+cn: cn=Rasmus6
+uid: 10000
+uidNumber: 10000
+gidNumber: 100
+homeDirectory: /home/rasmus

@@ -1,0 +1,4 @@
+dn: cn=uidNext,dc=migrid,dc=org
+objectClass: X-nextUserIdentifier
+cn: uidNext
+uidNumber: 0

@@ -1,0 +1,5 @@
+objectclass    ( 2.25.254185546955548845187682617152348290622 NAME 'X-certsDistinguishedName' SUP top STRUCTURAL
+         DESC 'An object containing the attributes
+               for a common 509 Distinguished Name'
+         MUST cn
+         MAY ( c $ st $ l $ o $ ou $ emailAddress ) )
