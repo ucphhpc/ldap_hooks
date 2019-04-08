@@ -25,19 +25,24 @@ class LDAP(LoggingConfigurable):
 
     url = Unicode("", allow_none=False, config=True,
                   help=dedent("""
-    URL/IP of the LDAP server.
-    E.g. 127.0.0.1
+    URL/IP of the LDAP server. E.g. 127.0.0.1
     """))
 
     user = Unicode(trait=Unicode(), allow_none=False, config=True,
                    help=dedent("""
-    Distinguished Name that is used to connect to the LDAP server.
+    Distinguished Name String that is used to connect to the LDAP server.
     E.g. cn=admin,dc=example,dc=org
     """))
 
     password = Unicode(None, allow_none=True, config=True,
                        help=dedent("""
-    Password used to authenticate as auth_user.
+    Password used to authenticate as user.
+    """))
+
+    ssl_cert_path = Unicode(None, allow_none=True, config=True,
+                            help=dedent("""
+    A path to the SSL certificate that is used to authenticate
+    as the 'user' with.
     """))
 
     base_dn = Unicode(None, allow_none=False, config=True,
@@ -60,7 +65,26 @@ class LDAP(LoggingConfigurable):
                                     default_value=[],
                                     help=dedent("""
     List of attributes inside the defined object_classes which are unique
-     and can have duplicates in the DIT with the same object classes
+     and can't have duplicates in the DIT with the same object classes
+    """))
+
+    replace_object_with = Dict(trait=Unicode(), traits={Unicode(): Unicode()},
+                               default_value={},
+                               help=dedent("""
+    A dictionary of key value pairs that should be used to prepare the submit
+     object string
+
+    E.g. {'/': '+'}
+    Which translates the following distinguished name as:
+        /C=NA/ST=NA/L=NA/O=NA/OU=NA/CN=User Name/emailAddress=email@address.com
+
+        +C=NA+ST=NA+L=NA+O=NA+OU=NA+CN=User Name+emailAddress=email@address.com
+    """))
+
+    name_strip_chars = List(trait=Unicode(),
+                            default_value=['/', '+', '*', ',', '.', '!', ' '],
+                            help=dedent("""
+    A list of characters that should be lstriped and rstriped from the submit name
     """))
 
     submit_spawner_attribute = Unicode(trait=Unicode(),
@@ -92,25 +116,6 @@ class LDAP(LoggingConfigurable):
 
     E.g:
         ('ldap_object_dict_key',)
-    """))
-
-    replace_object_with = Dict(trait=Unicode(), traits={Unicode(): Unicode()},
-                               default_value={},
-                               help=dedent("""
-    A dictionary of key value pairs that should be used to prepare the submit
-     object string
-
-    E.g. {'/': '+'}
-    Which translates the following distinguished name as:
-        /C=NA/ST=NA/L=NA/O=NA/OU=NA/CN=User Name/emailAddress=email@address.com
-
-        +C=NA+ST=NA+L=NA+O=NA+OU=NA+CN=User Name+emailAddress=email@address.com
-    """))
-
-    name_strip_chars = List(trait=Unicode(),
-                            default_value=['/', '+', '*', ',', '.', '!', ' '],
-                            help=dedent("""
-    A list of characters that should be lstriped and rstriped from the submit name
     """))
 
     dynamic_attributes = Dict(trait=Unicode(), traits={Unicode(): Unicode()},
@@ -341,7 +346,13 @@ def update_spawner_attributes(spawner, spawner_attributes):
 
 
 @gen.coroutine
-def setup_ldap_user(spawner):
+def hello_hook(spawner):
+    spawner.log.info("Hello from hook")
+    return True
+
+
+@gen.coroutine
+def setup_ldap_entry_hook(spawner):
     instance = LDAP()
 
     # TODO, copy entire default config options dynamically
