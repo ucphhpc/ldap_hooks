@@ -83,7 +83,7 @@ must be imported into the ``jupyterhub_config.py`` file::
 
 With this completed, the `submit_spawner_attribute` must be set,
 this must point to the variable path in the spawner instance
-where it can find the `Distinguished Name String (DNS) <https://ldapwiki.com/wiki/Distinguished%20Names>`_ value.
+where it can find the `Distinguished Name String (DN) <https://ldapwiki.com/wiki/Distinguished%20Names>`_ value.
 This string value makes up the entry that is to be submitted to the LDAP DIT,
 E.g::
 
@@ -105,7 +105,7 @@ If this extracted string is formatted in a way that is
 incorrectly seperated, the ``replace_object_with`` parameter can be
 used to fix this, E.g.::
 
-    # Prepare LDAP DNS object entry
+    # Prepare LDAP DN object entry
     LDAP.replace_object_with = {'/': '+'}
     # Does the following replacement
     # /C=NA/ST=NA/L=NA/O=NA/OU=NA/CN=User Name/emailAddress=email@address.com
@@ -113,7 +113,7 @@ used to fix this, E.g.::
 
 By default the ``name_strip_chars`` parameter is
 defined to strip extra characters that are either
-pre or postfixed to the DNS::
+pre or postfixed to the DN::
 
     # Default value
     LDAP.name_strip_chars = ['/', '+', '*', ',', '.', '!', ' ']
@@ -121,7 +121,7 @@ pre or postfixed to the DNS::
 Which means that it will automatically strip
 the prefixed ``+`` from ``replace_object_with`` output.
 
-Before the hook can submit the prepared DNS,
+Before the hook can submit the prepared DN,
 it first has to know which `Structural ObjectClass <https://ldapwiki.com/wiki/STRUCTURAL>`_
 should be used to create the entry with.
 Beyond at least one required Structural ObjectClass,
@@ -137,15 +137,15 @@ part of the specified ``LDAP.url`` server schema.
 
 Beyond the ``object_classes``, the hook also
 provides a parameter to specify additional object
-attributes to submittet DNS entry::
+attributes to submittet DN entry::
 
     LDAP.object_attributes = {'description': 'A default person account',
                               'surname': 'MySurname'}
 
 Duplicate entries can be default not exist in the LDAP DIT,
-therefore any duplicate DNS submission will fail.
+therefore any duplicate DN submission will fail.
 By default the hook will search the DIT for
-an entry that matches every attribute of the DNS string,
+an entry that matches every attribute of the DN string,
 if such an entry exists, the hook will simply stop before
 attempting to submit it. This behaviour can be customised
 via the ``unique_object_attributes`` parameter as shown in
