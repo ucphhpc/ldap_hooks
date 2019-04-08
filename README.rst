@@ -26,14 +26,14 @@ Configuration
 -------------
 
 You should edit your ``jupyterhub_config.py`` config file to set a particular
- pre_spawn_hook, E.g::
+pre_spawn_hook, E.g::
 
     from ldap_hooks import hello_hook
 
     c.Spawner.pre_spawn_hook = hello_hook
 
 Beyond this, a set of connection parameters must be set in order for
- the JupyterHub server to be able to interact with the designated LDAP host::
+the JupyterHub server to be able to interact with the designated LDAP host::
 
     from ldap_hooks import LDAP
 
@@ -43,7 +43,7 @@ Beyond this, a set of connection parameters must be set in order for
     LDAP.base_dn = "dc=example,dc=org"
 
 The user's permissions here depend on whether the hook is just
- extracting information, or is creating entries as well.
+extracting information, or is creating entries as well.
 
 The hooks that this library provides can be found below.
 
@@ -63,8 +63,8 @@ setup_ldap_entry_hook
 ---------------------
 
 This hook enables that the Spawner will submit/create an LDAP entry
- before the spawner starts the notebook. It is activate by setting the
- following parameter in the JupyterHub config::
+before the spawner starts the notebook. It is activate by setting the
+following parameter in the JupyterHub config::
 
     from ldap_hooks import setup_ldap_entry_hook
 
@@ -164,26 +164,3 @@ the ``unique_object_attributes`` parameter::
 
 Now the hook will search for if an entry with ``object_classes``
 exists, if so it will stop the submission.
-
-
-
-    # Dynamic attributes and where to find the value
-    LDAP.dynamic_attributes = {
-        'emailAddress': SPAWNER_SUBMIT_DATA,
-        'uidNumber': LDAP_SEARCH_ATTRIBUTE_QUERY
-    }
-
-    LDAP.set_spawner_attributes = {
-        'environment': {'NB_USER': '{emailAddress}',
-                        'NB_UID': '{uidNumber}'},
-    }
-
-    # Attributes used to check whether the ldap data of type object_classes already exists
-    # LDAP.unique_object_attributes = ['emailAddress']
-    LDAP.search_attribute_queries = [{'search_base': LDAP.base_dn,
-                                    'search_filter': '(objectclass=X-nextUserIdentifier)',
-                                    'attributes': ['uidNumber']}]
-
-    LDAP.search_result_operation = {'uidNumber': {'action': INCREMENT_ATTRIBUTE,
-                                                'modify_dn': 'cn=uidNext'
-                                                + ',' + LDAP.base_dn}}
