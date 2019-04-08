@@ -1,5 +1,5 @@
 pytest==3.6.2
-requests==2.19.1
+requests==2.21.0
 docker==3.4.0
 docutils==0.14
 flake8==3.5.0
