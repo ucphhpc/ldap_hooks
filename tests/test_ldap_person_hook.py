@@ -59,9 +59,9 @@ ldap_cont = {'image': LDAP_IMAGE, 'name': LDAP_IMAGE_NAME,
                              'LDAP_RFC2307BIS_SCHEMA': 'true'}}
 
 
-@pytest.mark.parametrize('container', [jhub_cont],
-                         indirect=['container'])
-def test_ldap_person_hook(container):
+@pytest.mark.parametrize('containers', [(jhub_cont, ldap_cont)],
+                         indirect=['containers'])
+def test_ldap_person_hook(containers):
     """
     Test that the ldap_person_hook is able to create an LDAP DIT entry,
     with the provided JupyterHub Spawner attribute.
@@ -71,7 +71,6 @@ def test_ldap_person_hook(container):
     client = docker.from_env()
     containers = client.containers.list()
     assert len(containers) > 0
-
     with requests.Session() as s:
         ready = False
         while not ready:

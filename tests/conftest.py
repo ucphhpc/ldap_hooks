@@ -79,3 +79,39 @@ def container(request):
             client.containers.get(_container.id)
         except NotFound:
             removed = True
+
+
+@pytest.fixture(scope='function')
+def containers(request):
+    if not isinstance(request.param, (list, tuple)):
+        raise TypeError("request: must be a list or tuple, "
+                        "was of type: {}".format(type(request.param)))
+
+    client = docker.from_env()
+    containers = []
+    for c in request.param:
+        _container = client.containers.run(**c)
+        attempts = 0
+        while _container.status != "running":
+            time.sleep(1)
+            _container = client.containers.get(_container.name)
+            attempts = attempts + 1
+            if attempts == 30:
+                raise RuntimeError("Container: {} never started correctly, "
+                                   "err: {}".format(_container.name,
+                                                    _container.status))
+
+        containers.append(_container)
+
+    yield containers
+
+    for container in containers:
+        container.stop()
+        container.wait()
+        container.remove()
+        removed = False
+        while not removed:
+            try:
+                client.containers.get(container.id)
+            except NotFound:
+                removed = True
