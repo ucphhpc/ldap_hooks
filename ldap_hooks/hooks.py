@@ -142,11 +142,11 @@ class LDAP(LoggingConfigurable):
 
     search_attribute_queries = List(trait=Dict(),
                                     traits=[{Unicode(): Unicode()}],
-                                    default_value=[{}],
+                                    default_value=[],
                                     help=dedent("""
     A list of expected variables to be extracted and prepared
-    from the base_dn LDAP DIT, generates the attributes
-    expected by LDAP_SEARCH_ATTRIBUTE_QUERY.
+    from the base_dn LDAP DIT before creation, uses DYNAMIC_ATTRIBUTE_METHODS
+    to achive this.
     """))
 
     search_result_operation = Dict(trait=Unicode(),
@@ -246,6 +246,9 @@ class ConnectionManager:
     def get_response_attributes(self):
         entry_attributes = {}
         resp = self.get_response()
+        if not resp:
+            return None
+
         dn = None
         for entry in resp:
             if not dn:
@@ -414,6 +417,15 @@ def setup_ldap_entry_hook(spawner):
                                   spawner, type(ldap_data)))
             return False
 
+        if not isinstance(instance.submit_spawner_attribute_keys,
+                          tuple):
+            spawner.log.error("LDAP - submit_spawner_attribute_keys is "
+                              "of incorrect type: {} must be a tuple".format(
+                                  type(instance.submit_spawner_attribute_keys
+                                       ))
+                              )
+            return False
+
         new_ldap_data = tuple_dict_select(
             instance.submit_spawner_attribute_keys,
             ldap_data)
@@ -553,24 +565,30 @@ def setup_ldap_entry_hook(spawner):
             # Extract attributes from existing object
             sources = {LDAP_SEARCH_ATTRIBUTE_QUERY: attributes,
                        SPAWNER_SUBMIT_DATA: ldap_dict}
-            instance.dynamic_attributes = get_interpolated_dynamic_attributes(
+            spawner.log.debug("LDAP - dynamic_attributes "
+                              "pre interpolated: {}".format(
+                                  instance.dynamic_attributes
+                              ))
+            prepared_dynamic_attributes = get_interpolated_dynamic_attributes(
                 spawner.log, sources, instance.dynamic_attributes
             )
-            if not instance.dynamic_attributes:
-                spawner.log.error("LDAP - Failed to setup dynamic_attributes: "
-                                  "{} with attribute_dict: {}".format(
-                                      instance.dynamic_attributes,
+
+            if instance.dynamic_attributes and not prepared_dynamic_attributes:
+                spawner.log.error("LDAP - Failed to setup prepared_attributes:"
+                                  " {} with attribute_dict: {}".format(
+                                      prepared_dynamic_attributes,
                                       attributes
                                   ))
                 return False
             # Setup set_spawner_attributes
             recursive_format(instance.set_spawner_attributes,
-                             instance.dynamic_attributes)
+                             prepared_dynamic_attributes)
             update_spawner_attributes(spawner, instance.set_spawner_attributes)
             return True
 
         # Create new DIT entry
         # Get extract variables
+        sources = {}
         for q in instance.search_attribute_queries:
             query = copy.deepcopy(q)
             spawner.log.debug(
@@ -599,7 +617,6 @@ def setup_ldap_entry_hook(spawner):
                                                                search_filter))
                 return False
 
-            sources = {}
             attributes = conn_manager.get_response_attributes()
             spawner.log.debug("LDAP - search_attribute_queries "
                               "attributes: {}".format(attributes))
@@ -623,22 +640,23 @@ def setup_ldap_entry_hook(spawner):
 
         # Prepare required dynamic attributes
         sources.update({SPAWNER_SUBMIT_DATA: ldap_dict})
-        instance.dynamic_attributes = get_interpolated_dynamic_attributes(
+        prepared_dynamic_attributes = get_interpolated_dynamic_attributes(
             spawner.log, sources, instance.dynamic_attributes
         )
 
-        if not instance.dynamic_attributes:
-            spawner.log.error("LDAP - Failed to setup dynamic_attributes: {}"
-                              "with attribute_dict: {}".format(
-                                  instance.dynamic_attributes, ldap_dict
+        if instance.dynamic_attributes and not prepared_dynamic_attributes:
+            spawner.log.error("LDAP - Failed to setup prepared_attributes:"
+                              " {} with attribute_dict: {}".format(
+                                  prepared_dynamic_attributes,
+                                  ldap_dict
                               ))
             return False
 
         # Format dn provided variables
         recursive_format(instance.set_spawner_attributes,
-                         instance.dynamic_attributes)
+                         prepared_dynamic_attributes)
         recursive_format(instance.object_attributes,
-                         instance.dynamic_attributes)
+                         prepared_dynamic_attributes)
 
         spawner.log.debug("LDAP - prepared spawner attributes {}".format(
             instance.set_spawner_attributes
