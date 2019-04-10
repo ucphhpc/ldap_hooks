@@ -151,3 +151,14 @@ def test_ldap_person_hook(build_image, network, containers):
         assert attributes['sn'] == ['My Surname']
         assert attributes['cn'] == ['a-new-user']
         assert attributes['description'] == ['A default person account']
+
+        # Teardown notebook
+        resp = s.delete(JHUB_URL + "/hub/api/users/{}/server".format(user),
+                        headers={'Referer': '127.0.0.1:8000/hub/'})
+        assert resp.status_code == 204
+        # double check it is gone
+        post_stop_containers = client.containers.list()
+        post_jupyter_containers = [jup_container for jup_container in
+                                   post_stop_containers
+                                   if "jupyter-" in jup_container.name]
+        assert len(post_jupyter_containers) == 0
