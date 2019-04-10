@@ -4,3 +4,7 @@ docker==3.4.0
 docutils==0.14
 flake8==3.7.*
 autopep8==1.4.*
+tornado==6.0.*
+ldap3==2.5.*
+traitlets==4.3.*
+gen==0.1
