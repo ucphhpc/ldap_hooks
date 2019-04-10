@@ -108,8 +108,8 @@ used to fix this, E.g.::
     # Prepare LDAP DN object entry
     LDAP.replace_object_with = {'/': '+'}
     # Does the following replacement
-    # /C=NA/ST=NA/L=NA/O=NA/OU=NA/CN=User Name/emailAddress=email@address.com
-    # +C=NA+ST=NA+L=NA+O=NA+OU=NA+CN=User Name+emailAddress=email@address.com
+    # /telephoneNumber=23012303403/SN=My Surname/CN=a-new-user
+    # +telephoneNumber=23012303403+SN=My Surname+CN=a-new-user
 
 By default the ``name_strip_chars`` parameter is
 defined to strip extra characters that are either
