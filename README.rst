@@ -119,7 +119,7 @@ pre or postfixed to the DN::
     LDAP.name_strip_chars = ['/', '+', '*', ',', '.', '!', ' ']
 
 Which means that it will automatically strip
-the prefixed ``+`` from ``replace_object_with`` output.
+the prefixed ``+`` from the ``replace_object_with`` output.
 
 Before the hook can submit the prepared DN,
 it first has to know which `Structural ObjectClass <https://ldapwiki.com/wiki/STRUCTURAL>`_
