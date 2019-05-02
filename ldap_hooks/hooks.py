@@ -18,7 +18,7 @@ DYNAMIC_ATTRIBUTE_METHODS = (SPAWNER_SUBMIT_DATA,
                              LDAP_SEARCH_ATTRIBUTE_QUERY)
 
 INCREMENT_ATTRIBUTE = '1'
-SEARCH_RESULT_OPERATIONS = (INCREMENT_ATTRIBUTE)
+SEARCH_RESULT_OPERATION_ACTIONS = (INCREMENT_ATTRIBUTE,)
 
 
 class LDAP(LoggingConfigurable):
@@ -145,18 +145,18 @@ class LDAP(LoggingConfigurable):
                                     default_value=[],
                                     help=dedent("""
     A list of expected variables to be extracted and prepared
-    from the base_dn LDAP DIT before creation, uses DYNAMIC_ATTRIBUTE_METHODS
-    to achive this.
+    from the base_dn LDAP DIT before creation
     """))
 
-    search_result_operation = Dict(trait=Unicode(),
-                                   traits={Unicode(): Dict()},
-                                   default_value={},
-                                   help=dedent("""
+    search_result_operations = Dict(trait=Unicode(),
+                                    traits={Unicode(): Dict()},
+                                    default_value={},
+                                    help=dedent("""
     A dict of attribute operations that should be carried out after
-    search_attribute_queries has been retrived.
+    search_attribute_queries has been retrived. The 'action' key value
+    must be defined in SEARCH_RESULT_OPERATION_ACTIONS.
     E.g.
-        {'uidNumber': {'operation': INCREMENT_ATTRIBUTE,
+        {'uidNumber': {'action': INCREMENT_ATTRIBUTE,
                        'modify_dn': 'cn=uidNext,dc=example,dc=org'}}
     """))
 
@@ -164,7 +164,7 @@ class LDAP(LoggingConfigurable):
                                   traits={Unicode(): Unicode()},
                                   default_value={},
                                   help=dedent("""
-    A dict of attributes that should be set on the passed in spawner object
+    A dict of attributes that should be set on the passed in spawner object.
     """))
 
 
@@ -298,10 +298,10 @@ def perform_search_result_operation(logger, conn_manager, base_dn,
         ))
         return False
 
-    if operation['action'] not in SEARCH_RESULT_OPERATIONS:
+    if operation['action'] not in SEARCH_RESULT_OPERATION_ACTIONS:
         logger.error("LDAP - Illegal search_result_operation: {}"
                      " must be one of: {}".format(
-                         operation['action'], SEARCH_RESULT_OPERATIONS
+                         operation['action'], SEARCH_RESULT_OPERATION_ACTIONS
                      ))
         return False
     return_value = None
@@ -339,6 +339,13 @@ def get_interpolated_dynamic_attributes(logger, sources, dynamic_attributes):
         # Check sources for LDAP_SEARCH_ATTRIBUTE_QUERY
         # key response with values
         val = None
+        if attr_val not in DYNAMIC_ATTRIBUTE_METHODS:
+            logger.error("LDAP - Illegal dynamic_attributes value: {}"
+                         " must be one of: {}".format(
+                             attr_val, DYNAMIC_ATTRIBUTE_METHODS
+                         ))
+            return False
+
         if attr_val == LDAP_SEARCH_ATTRIBUTE_QUERY:
             if LDAP_SEARCH_ATTRIBUTE_QUERY in sources \
                     and sources[LDAP_SEARCH_ATTRIBUTE_QUERY]:
@@ -354,8 +361,7 @@ def get_interpolated_dynamic_attributes(logger, sources, dynamic_attributes):
         if not val:
             logger.error("LDAP - Missing {} in {} which is required to"
                          " get_interpolated_dynamic_attributes".format(
-                             attr_val,
-                             sources))
+                             attr_val, sources))
             return False
         set_attributes[attr_key] = val
     return set_attributes
@@ -386,8 +392,8 @@ def setup_ldap_entry_hook(spawner):
     instance.set_spawner_attributes = copy.deepcopy(
         instance.set_spawner_attributes)
     instance.object_attributes = copy.deepcopy(instance.object_attributes)
-    instance.search_result_operation = copy.deepcopy(
-        instance.search_result_operation)
+    instance.search_result_operations = copy.deepcopy(
+        instance.search_result_operations)
 
     logging.basicConfig(filename='client_application.log', level=logging.DEBUG)
     set_library_log_detail_level(BASIC)
@@ -623,12 +629,12 @@ def setup_ldap_entry_hook(spawner):
             if attributes:
                 # Perform search_result_operations
                 for attr_key, attr_val in attributes.items():
-                    if attr_key in instance.search_result_operation:
+                    if attr_key in instance.search_result_operations:
                         post_operation_val = perform_search_result_operation(
                             spawner.log,
                             conn_manager,
                             instance.base_dn,
-                            instance.search_result_operation[attr_key],
+                            instance.search_result_operations[attr_key],
                             attr_key,
                             attr_val)
                         if not post_operation_val:
@@ -636,6 +642,7 @@ def setup_ldap_entry_hook(spawner):
                         attributes[attr_key] = post_operation_val
                         sources.update({LDAP_SEARCH_ATTRIBUTE_QUERY:
                                         {attr_key: post_operation_val}})
+
                 ldap_dict.update(attributes)
 
         # Prepare required dynamic attributes

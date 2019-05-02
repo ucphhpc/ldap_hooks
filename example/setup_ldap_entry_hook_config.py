@@ -59,7 +59,7 @@ LDAP.search_attribute_queries = [
 ]
 
 modify_dn = 'cn=uidNext' + ',' + LDAP.base_dn
-LDAP.search_result_operation = {'uidNumber': {'action': INCREMENT_ATTRIBUTE,
+LDAP.search_result_operations = {'uidNumber': {'action': INCREMENT_ATTRIBUTE,
                                               'modify_dn': modify_dn}}
 
 # Submit object settings
