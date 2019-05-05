@@ -1,3 +1,4 @@
 ldap3==2.5.*
 traitlets==4.3.*
 gen==0.1
+torando==5.1.*

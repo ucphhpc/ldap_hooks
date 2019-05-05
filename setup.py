@@ -26,6 +26,7 @@ setup(
     install_requires=[
         'ldap3>=2.5.2',
         'traitlets>=4.3.2',
+        'tornado>=5.1.1',
         'gen>=0.1'
     ],
     classifiers=[
