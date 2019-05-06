@@ -292,6 +292,8 @@ def tuple_dict_select(select_tuple, select_dict):
 
 def perform_search_result_operation(logger, conn_manager, base_dn,
                                     operation, attr_key, attr_val):
+    logger.debug("LDAP - enter perform_search_result_operation, "
+                 "{}-{}-{}".format(operation, attr_key, attr_val))
     if 'action' not in operation:
         logger.error("LDAP - missing action key in: {}".format(
             operation
@@ -359,9 +361,9 @@ def get_interpolated_dynamic_attributes(logger, sources, dynamic_attributes):
                                          attr_key)
                 val = attribute
         if not val:
-            logger.error("LDAP - Missing {} in {} which is required to"
+            logger.error("LDAP - Missing {} in {} which is required for {} in"
                          " get_interpolated_dynamic_attributes".format(
-                             attr_val, sources))
+                             attr_val, sources, attr_key))
             return False
         set_attributes[attr_key] = val
     return set_attributes
@@ -638,6 +640,10 @@ def setup_ldap_entry_hook(spawner):
                             attr_key,
                             attr_val)
                         if not post_operation_val:
+                            spawner.log.error("LDAP - Failed to get "
+                                              "a valid result from "
+                                              "perform_search_result_operation"
+                                              )
                             return False
                         attributes[attr_key] = post_operation_val
                         sources.update({LDAP_SEARCH_ATTRIBUTE_QUERY:
@@ -647,6 +653,8 @@ def setup_ldap_entry_hook(spawner):
 
         # Prepare required dynamic attributes
         sources.update({SPAWNER_SUBMIT_DATA: ldap_dict})
+        spawner.log.debug("LDAP - Sources state before interpolating with "
+                          " dynamic attributes {}".format(sources))
         prepared_dynamic_attributes = get_interpolated_dynamic_attributes(
             spawner.log, sources, instance.dynamic_attributes
         )
