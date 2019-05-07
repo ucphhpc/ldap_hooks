@@ -14,10 +14,10 @@ from .utils import recursive_format
 
 SPAWNER_SUBMIT_DATA = '1'
 LDAP_SEARCH_ATTRIBUTE_QUERY = '2'
-SPAWNER_USER_STATE = '3'
+SPAWNER_ATTR = '3'
 DYNAMIC_ATTRIBUTE_METHODS = (SPAWNER_SUBMIT_DATA,
                              LDAP_SEARCH_ATTRIBUTE_QUERY,
-                             SPAWNER_USER_STATE)
+                             SPAWNER_ATTR)
 
 INCREMENT_ATTRIBUTE = '1'
 SEARCH_RESULT_OPERATION_ACTIONS = (INCREMENT_ATTRIBUTE,)
@@ -360,10 +360,10 @@ def get_interpolated_dynamic_attributes(logger, sources, dynamic_attributes):
                     and sources[SPAWNER_SUBMIT_DATA]:
                 val = get_dict_key(sources[SPAWNER_SUBMIT_DATA],
                                    attr_key)
-        if attr_val == SPAWNER_USER_STATE:
-            if SPAWNER_USER_STATE in sources \
-                    and sources[SPAWNER_USER_STATE]:
-                val = get_dict_key(sources[SPAWNER_USER_STATE],
+        if attr_val == SPAWNER_ATTR:
+            if SPAWNER_ATTR in sources \
+                    and sources[SPAWNER_ATTR]:
+                val = rec_get_attr(sources[SPAWNER_ATTR],
                                    attr_key)
         if not val:
             logger.error("LDAP - Missing {} in {} which is required for {} in"
@@ -578,7 +578,7 @@ def setup_ldap_entry_hook(spawner):
             # Extract attributes from existing object
             sources = {LDAP_SEARCH_ATTRIBUTE_QUERY: attributes,
                        SPAWNER_SUBMIT_DATA: ldap_dict,
-                       SPAWNER_USER_STATE: spawner.user}
+                       SPAWNER_ATTR: spawner}
             spawner.log.debug("LDAP - dynamic_attributes "
                               "pre interpolated: {}".format(
                                   instance.dynamic_attributes
@@ -659,7 +659,7 @@ def setup_ldap_entry_hook(spawner):
 
         # Prepare required dynamic attributes
         sources.update({SPAWNER_SUBMIT_DATA: ldap_dict,
-                        SPAWNER_USER_STATE: spawner.user})
+                        SPAWNER_ATTR: spawner})
         spawner.log.debug("LDAP - Sources state before interpolating with "
                           " dynamic attributes {}".format(sources))
         prepared_dynamic_attributes = get_interpolated_dynamic_attributes(
