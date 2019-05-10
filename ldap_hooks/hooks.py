@@ -386,13 +386,13 @@ def get_interpolated_dynamic_attributes(logger, sources, dynamic_attributes):
 
 
 def update_spawner_attributes(spawner, spawner_attributes):
-    for SPAWNER_ATTRIBUTE, spawner_value in spawner_attributes.items():
-        if hasattr(spawner, SPAWNER_ATTRIBUTE):
-            attr = getattr(spawner, SPAWNER_ATTRIBUTE)
+    for spawner_attr, spawner_value in spawner_attributes.items():
+        if hasattr(spawner, spawner_attr):
+            attr = getattr(spawner, spawner_attr)
             if isinstance(attr, dict):
                 attr.update(spawner_value)
             if isinstance(attr, list) or isinstance(attr, str):
-                setattr(spawner, SPAWNER_ATTRIBUTE, spawner_value)
+                setattr(spawner, spawner_attr, spawner_value)
 
 
 @gen.coroutine
