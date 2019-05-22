@@ -1,7 +1,7 @@
 """A simple jupyter config file for testing the authenticator."""
 from ldap_hooks import setup_ldap_entry_hook
-from ldap_hooks import LDAP, LDAP_SEARCH_ATTRIBUTE_QUERY, \
-    SPAWNER_USER_ATTRIBUTE, LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY
+from ldap_hooks import LDAP, SPAWNER_USER_ATTRIBUTE, \
+    LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY
 c = get_config()
 
 c.JupyterHub.ip = '0.0.0.0'

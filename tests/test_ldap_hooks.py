@@ -324,8 +324,8 @@ jhub_obj_spw_cont = {'image': JHUB_IMAGE, 'name': JHUB_IMAGE_NAME,
                      'ports': {8000: 8000},
                      'network': LDAP_NETWORK_NAME,
                      'detach': 'True',
-                     'command': 'jupyterhub --debug -f ' +
-                     jhub_obj_spw_target_config}
+                     'command': 'jupyterhub --debug -f '
+                     + jhub_obj_spw_target_config}
 
 
 @pytest.mark.parametrize('build_image', [jhub_image_spec],
