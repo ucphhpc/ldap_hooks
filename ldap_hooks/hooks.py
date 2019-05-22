@@ -16,11 +16,13 @@ SPAWNER_SUBMIT_DATA = '1'
 LDAP_SEARCH_ATTRIBUTE_QUERY = '2'
 SPAWNER_ATTRIBUTE = '3'
 SPAWNER_USER_ATTRIBUTE = '4'
+LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY = '5'
 
 DYNAMIC_ATTRIBUTE_METHODS = (SPAWNER_SUBMIT_DATA,
                              LDAP_SEARCH_ATTRIBUTE_QUERY,
                              SPAWNER_ATTRIBUTE,
-                             SPAWNER_USER_ATTRIBUTE)
+                             SPAWNER_USER_ATTRIBUTE,
+                             LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY)
 INCREMENT_ATTRIBUTE = '1'
 SEARCH_RESULT_OPERATION_ACTIONS = (INCREMENT_ATTRIBUTE,)
 
@@ -346,10 +348,8 @@ def perform_search_result_operation(logger, conn_manager, base_dn,
 
 
 def get_interpolated_dynamic_attributes(logger, sources, dynamic_attributes):
-    set_attributes = {}
+    return_dict = {}
     for attr_key, attr_val in dynamic_attributes.items():
-        # Check sources for LDAP_SEARCH_ATTRIBUTE_QUERY
-        # key response with values
         val = None
         if attr_val not in DYNAMIC_ATTRIBUTE_METHODS:
             logger.error("LDAP - Illegal dynamic_attributes value: {}"
@@ -363,6 +363,14 @@ def get_interpolated_dynamic_attributes(logger, sources, dynamic_attributes):
                     and sources[LDAP_SEARCH_ATTRIBUTE_QUERY]:
                 val = get_dict_key(sources[LDAP_SEARCH_ATTRIBUTE_QUERY],
                                    attr_key)
+        if attr_val == LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY:
+            if LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY in sources \
+                    and sources[LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY]:
+                val = get_dict_key(sources[LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY],
+                                   attr_key)
+                if isinstance(val, (list, set, tuple)):
+                    val = val[0]
+
         if attr_val == SPAWNER_SUBMIT_DATA:
             if SPAWNER_SUBMIT_DATA in sources \
                     and sources[SPAWNER_SUBMIT_DATA]:
@@ -376,13 +384,11 @@ def get_interpolated_dynamic_attributes(logger, sources, dynamic_attributes):
             if SPAWNER_USER_ATTRIBUTE in sources \
                     and sources[SPAWNER_USER_ATTRIBUTE]:
                 val = get_attr(sources[SPAWNER_USER_ATTRIBUTE], attr_key)
-        if not val:
-            logger.error("LDAP - Missing {} in {} which is required for {} in "
-                         "get_interpolated_dynamic_attributes".format(
-                             attr_val, sources, attr_key))
-            return False
-        set_attributes[attr_key] = val
-    return set_attributes
+        if val:
+            return_dict[attr_key] = val
+    logger.debug("LDAP - prepared interpolated_attributes {}".format(
+        return_dict))
+    return return_dict
 
 
 def update_spawner_attributes(spawner, spawner_attributes):
@@ -583,6 +589,7 @@ def setup_ldap_entry_hook(spawner):
                 "LDAP - Retrived attributes {}".format(attributes))
             # Extract attributes from existing object
             sources = {LDAP_SEARCH_ATTRIBUTE_QUERY: attributes,
+                       LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY: attributes,
                        SPAWNER_SUBMIT_DATA: ldap_dict,
                        SPAWNER_ATTRIBUTE: spawner,
                        SPAWNER_USER_ATTRIBUTE: spawner.user}
@@ -660,6 +667,8 @@ def setup_ldap_entry_hook(spawner):
                             return False
                         attributes[attr_key] = post_operation_val
                         sources.update({LDAP_SEARCH_ATTRIBUTE_QUERY:
+                                        {attr_key: post_operation_val},
+                                        LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY:
                                         {attr_key: post_operation_val}})
 
                 ldap_dict.update(attributes)
@@ -671,26 +680,24 @@ def setup_ldap_entry_hook(spawner):
         spawner.log.debug(
             "LDAP - Sources state before interpolation "
             "with dynamic attributes {}".format(sources))
-        prepared_dynamic_attributes = get_interpolated_dynamic_attributes(
-            spawner.log, sources, instance.dynamic_attributes)
-        spawner.log.debug("LDAP - dynamic_attributes "
-                          "post interpolated: {}".format(
-                              prepared_dynamic_attributes))
 
-        if instance.dynamic_attributes and not prepared_dynamic_attributes:
-            spawner.log.error("LDAP - Failed to setup prepared_attributes:"
-                              " {} with attribute_dict: {}".format(
-                                  prepared_dynamic_attributes, ldap_dict))
+        prepared_object_attributes = get_interpolated_dynamic_attributes(
+            spawner.log, sources, instance.dynamic_attributes)
+
+        spawner.log.debug("LDAP - prepared_object_attributes:"
+                          " {}".format(prepared_object_attributes))
+
+        if instance.dynamic_attributes and not prepared_object_attributes:
+            spawner.log.error("LDAP - Failed to setup "
+                              "prepared_object_attributes: {} with "
+                              "attribute_dict: {}".format(
+                                  prepared_object_attributes, ldap_dict)
+                              )
             return False
 
         # Format dn provided variables
-        recursive_format(instance.set_spawner_attributes,
-                         prepared_dynamic_attributes)
         recursive_format(instance.object_attributes,
-                         prepared_dynamic_attributes)
-
-        spawner.log.debug("LDAP - prepared spawner attributes {}".format(
-            instance.set_spawner_attributes))
+                         prepared_object_attributes)
         spawner.log.debug("LDAP - prepared object attributes {}".format(
             instance.object_attributes))
 
@@ -733,7 +740,8 @@ def setup_ldap_entry_hook(spawner):
                               search_base, search_filter))
         success = search_for(conn_manager.get_connection(),
                              search_base,
-                             search_filter)
+                             search_filter,
+                             attributes=ALL_ATTRIBUTES)
         if not success:
             spawner.log.error("Failed to find {} at {}".format(
                 (search_base, search_filter), instance.url))
@@ -741,6 +749,32 @@ def setup_ldap_entry_hook(spawner):
         spawner.log.info("LDAP - found {} in {}".format(
             conn_manager.get_response(), instance.url))
 
+        response = conn_manager.get_response()
+        if len(response) > 1:
+            spawner.log.error(
+                "LDAP - multiple entries: {} were found with:"
+                " {}".format(response, search_filter))
+            return False
+
+        attributes = conn_manager.get_response_attributes()
+        # TODO, validate all the attributes are as expected
+        if not attributes:
+            spawner.log.error(
+                "LDAP - No attributes were returned from "
+                "existing dn: {} with search_filer: {}".format(ldap_data,
+                                                               search_filter))
+            return False
+
+        sources.update({LDAP_SEARCH_ATTRIBUTE_QUERY: attributes,
+                        LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY: attributes})
+        prepared_spawner_attributes = get_interpolated_dynamic_attributes(
+            spawner.log, sources, instance.dynamic_attributes)
+
+        recursive_format(instance.set_spawner_attributes,
+                         prepared_spawner_attributes)
+        spawner.log.debug("LDAP - formatted set_spawner_attributes: "
+                          "{} for the new entry: {}".format(
+                              instance.set_spawner_attributes, attributes))
         # Pass prepared attributes to spawner attributes
         update_spawner_attributes(spawner, instance.set_spawner_attributes)
         return True

@@ -1,12 +1,14 @@
 """A simple jupyter config file for testing the authenticator."""
 from ldap_hooks import setup_ldap_entry_hook
-from ldap_hooks import LDAP, LDAP_SEARCH_ATTRIBUTE_QUERY
+from ldap_hooks import LDAP, LDAP_SEARCH_ATTRIBUTE_QUERY, \
+    SPAWNER_USER_ATTRIBUTE, LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY
 c = get_config()
 
+c.JupyterHub.ip = '0.0.0.0'
 c.JupyterHub.hub_ip = '0.0.0.0'
-
 c.JupyterHub.authenticator_class = 'jhubauthenticators.HeaderAuthenticator'
 c.JupyterHub.spawner_class = 'dockerspawner.DockerSpawner'
+
 c.DockerSpawner.image = 'jupyter/base-notebook:latest'
 c.DockerSpawner.network_name = 'jhub_ldap_network'
 
@@ -27,22 +29,21 @@ LDAP.submit_spawner_attribute_keys = ('PersonDN',)
 LDAP.replace_object_with = {'/': '+'}
 
 LDAP.dynamic_attributes = {
-    'uidNumber': LDAP_SEARCH_ATTRIBUTE_QUERY
+    'name': SPAWNER_USER_ATTRIBUTE,
+    'uid': LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY
 }
 
 LDAP.set_spawner_attributes = {
-    'environment': {'NB_UID': '{uidNumber}'}
+    'environment': {'NB_USER': '{uid}'}
 }
 
-LDAP.search_attribute_queries = [
-    {'search_base': LDAP.base_dn,
-     'search_filter': '(objectclass=X-nextUserIdentifier)',
-     'attributes': ['uidNumber']}
-]
+# Attributes used to check whether the ldap data
+# of type object_classes already exists
+LDAP.unique_object_attributes = ['CN']
 
-# LDAP DIT object definition
-LDAP.object_classes = ['Person', 'PosixAccount']
-LDAP.object_attributes = {
-    'uidNumber': '{uidNumber}',
-    'gidNumber': '100'
-}
+# Submit object settings
+LDAP.object_classes = ['InetOrgPerson', 'PosixAccount']
+LDAP.object_attributes = {'uid': '{name}',
+                          'uidNumber': '1000 ',
+                          'gidNumber': '100',
+                          'homeDirectory': '/home/{name}'}

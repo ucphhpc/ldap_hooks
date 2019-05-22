@@ -2,7 +2,7 @@
 from jhubauthenticators import RegexUsernameParser
 from ldap_hooks import setup_ldap_entry_hook
 from ldap_hooks import LDAP, LDAP_SEARCH_ATTRIBUTE_QUERY, \
-    SPAWNER_SUBMIT_DATA, INCREMENT_ATTRIBUTE
+    SPAWNER_SUBMIT_DATA, INCREMENT_ATTRIBUTE, LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY
 c = get_config()
 
 c.JupyterHub.ip = '0.0.0.0'
@@ -40,18 +40,19 @@ LDAP.replace_object_with = {'/': '+'}
 
 # Dynamic attributes and where to find the value
 LDAP.dynamic_attributes = {
+    'uid': LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY,
     'emailAddress': SPAWNER_SUBMIT_DATA,
     'uidNumber': LDAP_SEARCH_ATTRIBUTE_QUERY
 }
 
 LDAP.set_spawner_attributes = {
-    'environment': {'NB_USER': '{emailAddress}',
+    'environment': {'NB_USER': '{uid}',
                     'NB_UID': '{uidNumber}'},
 }
 
 # Attributes used to check whether the ldap data
 # of type object_classes already exists
-# LDAP.unique_object_attributes = ['emailAddress']
+LDAP.unique_object_attributes = ['uid']
 LDAP.search_attribute_queries = [
     {'search_base': LDAP.base_dn,
      'search_filter': '(objectclass=X-nextUserIdentifier)',
@@ -64,7 +65,7 @@ LDAP.search_result_operations = {'uidNumber': {'action': INCREMENT_ATTRIBUTE,
 
 # Submit object settings
 LDAP.object_classes = ['X-certsDistinguishedName', 'PosixAccount']
-LDAP.object_attributes = {'uid': '{emailAddress}',
+LDAP.object_attributes = {'uid': '{uid}',
                           'uidNumber': '{uidNumber}',
                           'gidNumber': '100',
-                          'homeDirectory': '/home/{emailAddress}'}
+                          'homeDirectory': '/home/{uid}'}

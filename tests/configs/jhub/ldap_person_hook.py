@@ -3,6 +3,7 @@ from ldap_hooks import setup_ldap_entry_hook
 from ldap_hooks import LDAP
 c = get_config()
 
+c.JupyterHub.ip = '0.0.0.0'
 c.JupyterHub.hub_ip = '0.0.0.0'
 
 c.JupyterHub.authenticator_class = 'jhubauthenticators.HeaderAuthenticator'

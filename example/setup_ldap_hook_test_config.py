@@ -55,7 +55,7 @@ LDAP.set_spawner_attributes = {
 # LDAP.unique_object_attributes = ['emailAddress']
 LDAP.search_attribute_queries = [
     {'search_base': LDAP.base_dn,
-     'search_filter': '(objectclass=X-nextUserIdentifier)',
+     'search_filter': '(objectclass=x-nextUserIdentifier)',
      'attributes': ['uidNumber']}
 ]
 
@@ -64,7 +64,7 @@ LDAP.search_result_operations = {'uidNumber': {'action': INCREMENT_ATTRIBUTE,
                                                'modify_dn': modify_dn}}
 
 # Submit object settings
-LDAP.object_classes = ['X-certsDistinguishedName', 'PosixAccount']
+LDAP.object_classes = ['x-certsDistinguishedName', 'PosixAccount']
 LDAP.object_attributes = {'uid': '{name}',
                           'uidNumber': '{uidNumber}',
                           'gidNumber': '100',
