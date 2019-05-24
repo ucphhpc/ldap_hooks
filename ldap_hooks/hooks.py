@@ -397,8 +397,10 @@ def update_spawner_attributes(spawner, spawner_attributes):
             attr = getattr(spawner, spawner_attr)
             if isinstance(attr, dict):
                 attr.update(spawner_value)
-            if isinstance(attr, list) or isinstance(attr, str):
+            if isinstance(attr, (list, set, tuple, str)):
                 setattr(spawner, spawner_attr, spawner_value)
+        else:
+            setattr(spawner, spawner_attr, spawner_value)
 
 
 @gen.coroutine
