@@ -32,7 +32,7 @@ pre_spawn_hook, E.g::
 
     c.Spawner.pre_spawn_hook = hello_hook
 
-Beyond this, a set of connection parameters must be set in order for
+In addition to specifying the ``pre_spawn_hook``, a set of connection parameters must be set in order for
 the JupyterHub server to be able to interact with the designated LDAP host::
 
     from ldap_hooks import LDAP
@@ -63,7 +63,7 @@ setup_ldap_entry_hook
 =====================
 
 This hook enables that the Spawner will submit/create an LDAP entry
-before the spawner starts the notebook. It is activate by setting the
+before the spawner starts the notebook. It is activated by setting the
 following parameter in the JupyterHub config::
 
     from ldap_hooks import setup_ldap_entry_hook
