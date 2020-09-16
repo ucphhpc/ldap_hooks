@@ -1,9 +1,10 @@
-.. image:: https://travis-ci.org/rasmunk/ldap_hooks.svg?branch=master
-    :target: https://travis-ci.org/rasmunk/ldap_hooks
-
 ==========
 ldap_hooks
 ==========
+.. image:: https://travis-ci.org/rasmunk/ldap_hooks.svg?branch=master
+    :target: https://travis-ci.org/rasmunk/ldap_hooks
+.. image:: https://badge.fury.io/py/ldap-hooks.svg
+    :target: https://badge.fury.io/py/ldap-hooks
 
 A Jupyter Spawner hook for creating LDAP DIT entries via `pre_spawn_hook
 <https://jupyterhub.readthedocs.io/en/stable/api/spawner.html?highlight=pre_spawn_hook>`_
