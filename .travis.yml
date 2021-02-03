@@ -3,31 +3,33 @@ sudo: required
 services: docker
 language: python
 python:
-- '2.7'
-- '3.5'
 - '3.6'
 - '3.7'
+- '3.8'
+- '3.9'
 before_install:
 - sudo apt-get update
 - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
 install:
 - docker pull jupyterhub/jupyterhub:0.9.2
 - docker pull jupyter/base-notebook:latest
-- pip install -r tests/requirements.txt
+- pip install .[dev]
+- pip install .
+- pip install .[test]
 script:
 - python setup.py check -rms
 - flake8
 - travis_wait pytest -s -v tests/
 deploy:
-  skip_cleanup: true
   distributions: sdist bdist_wheel
   provider: pypi
+  skip_existing: true
+  skip_cleanup: true
   user: rasmunk
   password:
     secure: YTZeHG49YH4ZK6A2Rm8aChikb34TTVlBP2Wn3oV8+005cIFMP3JOZN8C4ImG9C9731q7ec1AfPLtvPpVTwvWJ93ow3RnPwacYqLBD5nECm5GNOrcw/yXZltEJfHnHT3/8GOwmF7EFp0dnWO600EbmXnIhtSlXkv+9tU7POaM3ykUmbtRYt4l5KRncPM6Q6aOVf+8HECUH1tX+W94Y/jn8GGwQPfdb/i83isFmgnk/OYwmkYgR0QCgCdJfO/xZVQYRr8cIfu/e5ZEgcgnroJit1w4aJxw0Dx/ZvA8zAbrIq0HN7fhAw1rWWve63rLPtr23y5agErBSn+LaoL3Mik4Kuo4dC4Mw7g0+iYMgQcKBbUeJkitm6L4Z6JGXuxuADZsIRoVLiGp6QRTLSKD9qnp714QVZwBnGBmEPpD3YBPWq8iRPMHaNOsEFNi7XUtV++knbuT/5l5JfQbAJv1uyFOCON6MIepbdz5GD9M7z15oV3TORdXNcVq25sYK/JllAExVFNC47xPg+nsIDxHZ0AXtrsZkxZ+qmeeRk1hInnOSr6D1VHcu4TiDB3XU0nV1R3GNabUqDe8xlmKCA+Ui2mE0QdWHHOgt/vOI9SXF9u7+3Ue/UCPM+4gEkazMzQ8faZ19yZNRKeZ0y/AdlTM/3cQHXcQt134oOrg4LIVwrlcMCM=
   on:
     tags: true
     branch: master
-    python: '3.7'
 notifications:
   slack: raz-s:se1PurXsQJv03nBZa9XWMOOS

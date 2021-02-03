@@ -4,7 +4,7 @@ import docker
 from docker.errors import NotFound
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def network(request):
     """Create the docker network that the hub and server services will
     use to communicate.
@@ -21,7 +21,7 @@ def network(request):
             removed = True
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def build_image(request):
     client = docker.from_env()
     _image = client.images.build(**request.param)
@@ -40,7 +40,7 @@ def build_image(request):
             removed = True
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def pull_image(request):
     client = docker.from_env()
     _image = client.images.pull(**request.param)
@@ -59,7 +59,7 @@ def pull_image(request):
             removed = True
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def container(request):
     client = docker.from_env()
     _container = client.containers.run(**request.param)
@@ -68,7 +68,7 @@ def container(request):
         _container = client.containers.get(_container.name)
 
     yield _container
-    assert hasattr(_container, 'id')
+    assert hasattr(_container, "id")
 
     _container.stop()
     _container.wait()
@@ -81,11 +81,13 @@ def container(request):
             removed = True
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def containers(request):
     if not isinstance(request.param, (list, tuple)):
-        raise TypeError("request: must be a list or tuple, "
-                        "was of type: {}".format(type(request.param)))
+        raise TypeError(
+            "request: must be a list or tuple, "
+            "was of type: {}".format(type(request.param))
+        )
 
     client = docker.from_env()
     containers = []
@@ -97,9 +99,10 @@ def containers(request):
             _container = client.containers.get(_container.name)
             attempts = attempts + 1
             if attempts == 30:
-                raise RuntimeError("Container: {} never started correctly, "
-                                   "err: {}".format(_container.name,
-                                                    _container.status))
+                raise RuntimeError(
+                    "Container: {} never started correctly, "
+                    "err: {}".format(_container.name, _container.status)
+                )
 
         containers.append(_container)
 

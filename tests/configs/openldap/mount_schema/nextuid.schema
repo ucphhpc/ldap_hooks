@@ -1,5 +1,4 @@
-objectclass    ( 2.25.15302271381131833582196205683187544249 NAME 'X-nextUserIdentifier' SUP top STRUCTURAL
-         DESC 'An object containing a uid attribute,
-               can be used with an atomic delete+add
-               operation to generate a new uid'
-         MUST ( cn $ uidNumber ) )
+objectclass ( 2.25.15302271381131833582196205683187544249 NAME 'x-nextUserIdentifier'
+        DESC 'An object containing a uid attribute, can be used with an atomic delete+add operation to generate a new uid'
+        SUP top STRUCTURAL
+        MUST ( cn $ uidNumber ) )
