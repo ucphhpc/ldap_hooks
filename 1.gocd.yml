@@ -1,0 +1,28 @@
+environments:
+  pypi_package:
+    environments:
+      GIT_USER: "{{SECRET:[github][username]}}"
+    pipelines:
+      - ldap_hooks
+pipelines:
+  ldap_hooks:
+    group: pypi_package
+    locking: off
+    materials:
+      ldap_hooks_git:  # this is the name of material
+        # says about type of material and url at once
+        git: https://github.com/ucphhpc/ldap_hooks.git
+        branch: master
+        destination: ldap_hooks
+      publish_python_git:
+        git: https://github.com/rasmunk/publish-python-scripts.git
+        branch: main
+        username: ${GIT_USER}
+        password: "{{SECRET:[github][access_token]}}"
+        destination: publish-python-scripts
+    parameters:
+      ARGS: ''
+      SRC_DIRECTORY: ldap_hooks
+      TEST_DIRECTORY: ldap_hooks
+      PUSH_DIRECTORY: publish-python-scripts
+    template: pypi_package
