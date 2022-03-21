@@ -22,7 +22,7 @@ long_description = open("README.rst").read()
 setup(
     name="ldap_hooks",
     version=version_ns["__version__"],
-    description="A set of Jupyter Spawner pre_spawn_hooks for "
+    description="A set of Jupyter Spawner pre_spawn_hooks for "
     "creating/retrieving LDAP DIT entries during spawn",
     long_description=long_description,
     author="Rasmus Munk",
