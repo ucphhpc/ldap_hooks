@@ -8,11 +8,11 @@ ADD requirements-dev.txt /app/requirements-dev.txt
 ADD tests/requirements.txt /app/tests/requirements.txt
 
 WORKDIR /app
-RUN pip install -r requirements.txt \
+RUN pip3 install -r requirements.txt \
     && touch README.rst \
-    && python setup.py install
+    && python3 setup.py install
 
-RUN pip install dockerspawner \
+RUN pip3 install dockerspawner \
         jhub-authenticators
 
 # Make sure the jupyter_config is mounted upon run
