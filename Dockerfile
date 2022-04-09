@@ -10,7 +10,7 @@ ADD tests/requirements.txt /app/tests/requirements.txt
 WORKDIR /app
 RUN pip3 install -r requirements.txt \
     && touch README.rst \
-    && python3 setup.py install
+    && pip3 install .
 
 RUN pip3 install dockerspawner \
         jhub-authenticators

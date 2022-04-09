@@ -10,7 +10,7 @@ from docker.errors import NotFound
 # root dir
 docker_path = dirname(dirname(realpath(__file__)))
 
-JHUB_IMAGE_NAME = "jupyterhub"
+JHUB_IMAGE_NAME = "jupyterhub-ldap-hooks"
 JHUB_IMAGE_TAG = "test"
 JHUB_IMAGE = "".join([JHUB_IMAGE_NAME, ":", JHUB_IMAGE_TAG])
 

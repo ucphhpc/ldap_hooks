@@ -1,7 +1,7 @@
 PACKAGE_NAME=ldap-hooks
 PACKAGE_NAME_FORMATTED=$(subst -,_,$(PACKAGE_NAME))
 OWNER=ucphhpc
-IMAGE=ldap-hooks
+IMAGE=jupyterhub-ldap-hooks
 TAG=edge
 ARGS=
 
