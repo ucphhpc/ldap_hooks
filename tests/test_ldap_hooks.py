@@ -1,18 +1,26 @@
-import requests
 import docker
+import os
+import requests
+import logging
 import pytest
 from ldap3 import ALL_ATTRIBUTES
 from ldap_hooks import search_for, ConnectionManager
 from os.path import join, dirname, realpath
 from docker.types import Mount
 from docker.errors import NotFound
+from .util import wait_for_site
 
 # root dir
 docker_path = dirname(dirname(realpath(__file__)))
 
+# Logger
+logging.basicConfig(level=logging.INFO)
+test_logger = logging.getLogger()
+
 JHUB_IMAGE_NAME = "jupyterhub-ldap-hooks"
 JHUB_IMAGE_TAG = "test"
 JHUB_IMAGE = "".join([JHUB_IMAGE_NAME, ":", JHUB_IMAGE_TAG])
+PORT = 8000
 
 jhub_image_spec = {"path": docker_path, "tag": JHUB_IMAGE, "rm": "True", "pull": "True"}
 
@@ -21,14 +29,14 @@ LDAP_IMAGE_NAME = "openldap"
 LDAP_IMAGE_TAG = "1.2.3"
 LDAP_IMAGE = "".join([LDAP_IMAGE_PATH, ":", LDAP_IMAGE_TAG])
 
-JHUB_URL = "http://127.0.0.1:8000"
+JHUB_URL = "http://127.0.0.1:{}".format(PORT)
 LDAP_URL = "http://openldap"
 
 # Config setup
 config_path = join(dirname(realpath(__file__)), "configs")
 
 jhub_config_path = join(config_path, "jhub", "ldap_person_hook.py")
-jhub_target_config = "/etc/jupyterhub/jupyterhub_config.py"
+jhub_target_config = os.path.join(os.sep, "etc", "jupyterhub", "jupyterhub_config.py")
 
 ldap_schema = join(config_path, "openldap", "mount_schema")
 ldap_target_schema = "/container/service/slapd/assets/config/bootstrap/schema"
@@ -44,8 +52,8 @@ ldap_network_config = {
 }
 
 docker_mount = Mount(
-    source="/var/run/docker.sock",
-    target="/var/run/docker.sock",
+    source=os.path.join(os.sep, "var", "run", "docker.sock"),
+    target=os.path.join(os.sep, "var", "run", "docker.sock"),
     read_only=True,
     type="bind",
 )
@@ -63,7 +71,7 @@ jhub_cont = {
         ),
         docker_mount,
     ],
-    "ports": {8000: 8000},
+    "ports": {PORT: PORT},
     "network": LDAP_NETWORK_NAME,
     "detach": "True",
     "command": "jupyterhub --debug -f " + jhub_target_config,
@@ -110,24 +118,20 @@ def test_ldap_person_hook(build_image, network, containers):
     Test that the ldap_person_hook is able to create an LDAP DIT entry,
     with the provided JupyterHub Spawner attribute.
     """
+    test_logger.info("Start of ldap person hook testing")
     client = docker.from_env()
-    containers = client.containers.list()
-    assert len(containers) > 0
+    username = "ldap-user"
+    auth_headers = {"Remote-User": username}
+    assert wait_for_site(JHUB_URL, valid_status_code=401) is True
     with requests.Session() as s:
-        ready = False
-        while not ready:
-            resp = s.get("".join([JHUB_URL, "/hub/home"]))
-            if resp.status_code != 404:
-                ready = True
         # Login
-        user = "a-new-user"
-        login_response = s.post(JHUB_URL + "/hub/login", headers={"Remote-User": user})
+        login_response = s.post(JHUB_URL + "/hub/login", headers=auth_headers)
         assert login_response.status_code == 200
 
         resp = s.get(JHUB_URL + "/hub/home")
         assert resp.status_code == 200
 
-        dn_str = "/telephoneNumber=23012303403/SN=My Surname/CN=" + user
+        dn_str = "/telephoneNumber=23012303403/SN=My Surname/CN=" + username
         # Pass LDAP DN for creation on spawn
         post_dn = s.post(
             JHUB_URL + "/hub/user-data", json={"data": {"PersonDN": dn_str}}
@@ -138,7 +142,7 @@ def test_ldap_person_hook(build_image, network, containers):
         spawn_response = s.post(JHUB_URL + "/hub/spawn")
         assert spawn_response.status_code == 200
 
-        container_name = "jupyter-" + user
+        container_name = "jupyter-" + username
         spawned = False
         wait_attempts = 20
         while not spawned and wait_attempts > 0:
@@ -160,7 +164,7 @@ def test_ldap_person_hook(build_image, network, containers):
         search_base = "dc=example,dc=org"
         search_filter = (
             "(&(objectclass=Person)(telephoneNumber=23012303403)"
-            "(SN=My Surname)(CN=" + user + "))"
+            "(SN=My Surname)(CN=" + username + "))"
         )
 
         conn_manager = ConnectionManager(
@@ -180,14 +184,14 @@ def test_ldap_person_hook(build_image, network, containers):
         assert attributes["objectClass"] == ["person"]
         assert attributes["telephoneNumber"] == ["23012303403"]
         assert attributes["sn"] == ["My Surname"]
-        assert attributes["cn"] == [user]
+        assert attributes["cn"] == [username]
         assert attributes["description"] == ["A default person account"]
 
         # Teardown notebook
         user_container = client.containers.get(container_name)
         resp = s.delete(
             JHUB_URL + "/hub/api/users/{}/server".format(user),
-            headers={"Referer": "127.0.0.1:8000/hub/"},
+            headers={"Referer": "{}/hub/".format(JHUB_URL)},
         )
         assert resp.status_code == 204
         user_container.stop()
@@ -226,7 +230,7 @@ jhub_dynamic_cont = {
         ),
         docker_mount,
     ],
-    "ports": {8000: 8000},
+    "ports": {PORT: PORT},
     "network": LDAP_NETWORK_NAME,
     "detach": "True",
     "command": "jupyterhub --debug -f " + jhub_target_config,
@@ -243,18 +247,14 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
     Test that the ldap_person_hook is able to create an LDAP DIT entry,
     with a dynamic provided spawner attribute
     """
+    test_logger.info("Start of ldap person dynamic attribute hook")
     client = docker.from_env()
-    containers = client.containers.list()
-    assert len(containers) > 0
+    username = "a-new-dynamic-user"
+    auth_headers = {"Remote-User": username}
+    assert wait_for_site(JHUB_URL, valid_status_code=401) is True
     with requests.Session() as s:
-        ready = False
-        while not ready:
-            resp = s.get("".join([JHUB_URL, "/hub/home"]))
-            if resp.status_code != 404:
-                ready = True
         # Login
-        user = "a-new-dynamic-user"
-        login_response = s.post(JHUB_URL + "/hub/login", headers={"Remote-User": user})
+        login_response = s.post(JHUB_URL + "/hub/login", headers=auth_headers)
         assert login_response.status_code == 200
 
         resp = s.get(JHUB_URL + "/hub/home")
@@ -265,7 +265,7 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
             "/description="
             + desc
             + "/telephoneNumber=23012303403/SN=My Surname/CN="
-            + user
+            + username
         )
         # Pass LDAP DN for creation on spawn
         post_dn = s.post(
@@ -277,7 +277,7 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
         spawn_response = s.post(JHUB_URL + "/hub/spawn")
         assert spawn_response.status_code == 200
 
-        container_name = "jupyter-" + user
+        container_name = "jupyter-" + username
         spawned = False
         wait_attempts = 20
         while not spawned and wait_attempts > 0:
@@ -300,7 +300,7 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
             "(&(objectclass=Person)(description="
             + desc
             + ")(telephoneNumber=23012303403)(SN=My Surname)(CN="
-            + user
+            + username
             + "))"
         )
 
@@ -321,7 +321,7 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
         assert attributes["objectClass"] == ["person"]
         assert attributes["telephoneNumber"] == ["23012303403"]
         assert attributes["sn"] == ["My Surname"]
-        assert attributes["cn"] == [user]
+        assert attributes["cn"] == [username]
         assert attributes["description"] == [desc]
 
         # Check that the notebook has the description env
@@ -334,8 +334,8 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
 
         # Teardown notebook
         resp = s.delete(
-            JHUB_URL + "/hub/api/users/{}/server".format(user),
-            headers={"Referer": "127.0.0.1:8000/hub/"},
+            JHUB_URL + "/hub/api/users/{}/server".format(username),
+            headers={"Referer": "{}/hub/".format(JHUB_URL)},
         )
         assert resp.status_code == 204
         user_container.stop()
@@ -374,7 +374,7 @@ jhub_obj_spw_cont = {
         ),
         docker_mount,
     ],
-    "ports": {8000: 8000},
+    "ports": {PORT: PORT},
     "network": LDAP_NETWORK_NAME,
     "detach": "True",
     "command": "jupyterhub --debug -f " + jhub_obj_spw_target_config,
@@ -391,18 +391,14 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
     Test that the ldap_person_hook is able to create an LDAP DIT entry,
     with a dynamic provided spawner attribute
     """
+    test_logger.info("Start of ldap dynamic object spawner attributes testing")
     client = docker.from_env()
-    containers = client.containers.list()
-    assert len(containers) > 0
+    username = "mynewuser"
+    auth_headers = {"Remote-User": username}
+    assert wait_for_site(JHUB_URL, valid_status_code=401) is True
     with requests.Session() as s:
-        ready = False
-        while not ready:
-            resp = s.get("".join([JHUB_URL, "/hub/home"]))
-            if resp.status_code != 404:
-                ready = True
         # Login
-        user = "mynewuser"
-        login_response = s.post(JHUB_URL + "/hub/login", headers={"Remote-User": user})
+        login_response = s.post(JHUB_URL + "/hub/login", headers=auth_headers)
         assert login_response.status_code == 200
 
         resp = s.get(JHUB_URL + "/hub/home")
@@ -413,7 +409,7 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
             "/description="
             + desc
             + "/telephoneNumber=23012303403/SN=My Surname/CN="
-            + user
+            + username
         )
         # Pass LDAP DN for creation on spawn
         post_dn = s.post(
@@ -425,7 +421,7 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
         spawn_response = s.post(JHUB_URL + "/hub/spawn")
         assert spawn_response.status_code == 200
 
-        container_name = "jupyter-" + user
+        container_name = "jupyter-" + username
         spawned = False
         wait_attempts = 20
         while not spawned and wait_attempts > 0:
@@ -438,12 +434,12 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
         # Check that the notebook has the NB_USER env
         user_container = client.containers.get(container_name)
         container_nbuser = user_container.attrs["Config"]["Env"][0]
-        assert "NB_USER=" + user == container_nbuser
+        assert "NB_USER=" + username == container_nbuser
 
         # Teardown notebook
         resp = s.delete(
-            JHUB_URL + "/hub/api/users/{}/server".format(user),
-            headers={"Referer": "127.0.0.1:8000/hub/"},
+            JHUB_URL + "/hub/api/users/{}/server".format(username),
+            headers={"Referer": "{}/hub/".format(JHUB_URL)},
         )
         assert resp.status_code == 204
         user_container.stop()
@@ -474,16 +470,16 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
         # Validate that the env is still correct
         user_container = client.containers.get(container_name)
         container_nbuser = user_container.attrs["Config"]["Env"][0]
-        assert "NB_USER=" + user == container_nbuser
+        assert "NB_USER=" + username == container_nbuser
 
         # Validate that the ldap DIT still only has 1 entry
         search_base = "dc=example,dc=org"
         search_filter = (
             "(&(objectclass=inetOrgPerson)"
             "(objectclass=posixAccount)(uid="
-            + user
+            + username
             + ")(telephoneNumber=23012303403)(SN=My Surname)(CN="
-            + user
+            + username
             + "))"
         )
 
@@ -507,13 +503,13 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
         assert attributes["objectClass"] == ["inetOrgPerson", "posixAccount"]
         assert attributes["telephoneNumber"] == ["23012303403"]
         assert attributes["sn"] == ["My Surname"]
-        assert attributes["cn"] == [user]
-        assert attributes["uid"] == [user]
+        assert attributes["cn"] == [username]
+        assert attributes["uid"] == [username]
 
         # Teardown notebook
         resp = s.delete(
-            JHUB_URL + "/hub/api/users/{}/server".format(user),
-            headers={"Referer": "127.0.0.1:8000/hub/"},
+            JHUB_URL + "/hub/api/users/{}/server".format(username),
+            headers={"Referer": "{}/hub/".format(JHUB_URL)},
         )
         assert resp.status_code == 204
         user_container.stop()
