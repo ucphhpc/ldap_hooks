@@ -25,4 +25,4 @@ pipelines:
       SRC_DIRECTORY: ldap_hooks
       TEST_DIRECTORY: ldap_hooks
       PUSH_DIRECTORY: publish-python-scripts
-    template: pypi_package
+    template: bare_metal_pypi_package
