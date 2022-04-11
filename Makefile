@@ -59,6 +59,9 @@ uninstall:
 installcheck:
 	$(VENV)/pip install -r tests/requirements.txt
 
+uninstallcheck:
+	$(VENV)/pip uninstall -y -r requirements.txt
+
 # The tests requires access to the docker socket
 check:
 	. $(VENV)/activate; pytest -s -v tests/
