@@ -4,4 +4,4 @@ docutils==0.18.1
 flake8==4.0.*
 autopep8==1.6.*
 gen==0.1
-pytest==7.1.1
+pytest==6.2.5
