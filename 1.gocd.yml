@@ -1,12 +1,12 @@
 environments:
-  pypi_package:
+  bare_metal_pypi_package:
     environments:
       GIT_USER: "{{SECRET:[github][username]}}"
     pipelines:
       - ldap_hooks
 pipelines:
   ldap_hooks:
-    group: pypi_package
+    group: bare_metal_pypi_package
     locking: off
     materials:
       ldap_hooks_git:  # this is the name of material
