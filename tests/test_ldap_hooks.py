@@ -3,12 +3,19 @@ import os
 import requests
 import logging
 import pytest
+from urllib.parse import urljoin
 from ldap3 import ALL_ATTRIBUTES
 from ldap_hooks import search_for, ConnectionManager
 from os.path import join, dirname, realpath
 from docker.types import Mount
-from docker.errors import NotFound
-from .util import wait_for_site
+from .util import (
+    wait_for_site,
+    get_container,
+    get_container_env,
+    get_container_user,
+    delete,
+    wait_for_container,
+)
 
 # root dir
 docker_path = dirname(dirname(realpath(__file__)))
@@ -30,6 +37,7 @@ LDAP_IMAGE_TAG = "1.2.3"
 LDAP_IMAGE = "".join([LDAP_IMAGE_PATH, ":", LDAP_IMAGE_TAG])
 
 JHUB_URL = "http://127.0.0.1:{}".format(PORT)
+
 LDAP_URL = "http://openldap"
 
 # Config setup
@@ -123,42 +131,36 @@ def test_ldap_person_hook(build_image, network, containers):
     username = "ldap-user"
     auth_headers = {"Remote-User": username}
     assert wait_for_site(JHUB_URL, valid_status_code=401) is True
-    with requests.Session() as s:
+    with requests.Session() as session:
         # Login
-        login_response = s.post(JHUB_URL + "/hub/login", headers=auth_headers)
+        login_response = session.post(JHUB_URL + "/hub/login", headers=auth_headers)
         assert login_response.status_code == 200
 
-        resp = s.get(JHUB_URL + "/hub/home")
+        resp = session.get(JHUB_URL + "/hub/home")
         assert resp.status_code == 200
 
         dn_str = "/telephoneNumber=23012303403/SN=My Surname/CN=" + username
         # Pass LDAP DN for creation on spawn
-        post_dn = s.post(
+        post_dn = session.post(
             JHUB_URL + "/hub/user-data", json={"data": {"PersonDN": dn_str}}
         )
         assert post_dn.status_code == 200
 
         # Spawn notebook
-        spawn_response = s.post(JHUB_URL + "/hub/spawn")
+        spawn_response = session.post(JHUB_URL + "/hub/spawn")
         assert spawn_response.status_code == 200
 
-        container_name = "jupyter-" + username
-        spawned = False
-        wait_attempts = 20
-        while not spawned and wait_attempts > 0:
-            try:
-                client.containers.get(container_name)
-                spawned = True
-            except NotFound:
-                pass
-            wait_attempts -= 1
+        container_name = "{}-{}".format("jupyter", username)
+        wait_min = 5
+        if not wait_for_container(client, container_name, minutes=wait_min):
+            raise RuntimeError(
+                "No container with name: {} appeared within: {} minutes".format(
+                    service_name, wait_min
+                )
+            )
 
-        post_spawn_containers = [
-            jup_container
-            for jup_container in client.containers.list()
-            if "jupyter-" in jup_container.name
-        ]
-        assert len(post_spawn_containers) > 0
+        spawned_container = get_container(client, container_name)
+        assert spawned_container is not None
 
         # Search openldap for person
         search_base = "dc=example,dc=org"
@@ -187,33 +189,25 @@ def test_ldap_person_hook(build_image, network, containers):
         assert attributes["cn"] == [username]
         assert attributes["description"] == ["A default person account"]
 
-        # Teardown notebook
-        user_container = client.containers.get(container_name)
-        resp = s.delete(
-            JHUB_URL + "/hub/api/users/{}/server".format(user),
-            headers={"Referer": "{}/hub/".format(JHUB_URL)},
-        )
-        assert resp.status_code == 204
-        user_container.stop()
-        user_container.wait()
-        user_container.remove()
+        # Shutdown the container
+        # Delete the spawned service
+        delete_headers = {"Referer": urljoin(JHUB_URL, "/hub/"), "Origin": JHUB_URL}
 
-        wait_attempts = 20
-        removed = False
-        while not removed and wait_attempts > 0:
-            try:
-                client.containers.get(container_name)
-            except NotFound:
-                removed = True
-            wait_attempts -= 1
+        jhub_user = get_container_user(spawned_container)
+        assert jhub_user is not None
+        assert username == jhub_user
+        delete_url = urljoin(JHUB_URL, "/hub/api/users/{}/server".format(jhub_user))
 
-        post_jupyter_containers = [
-            jup_container
-            for jup_container in client.containers.list()
-            if "jupyter-" in jup_container.name
-        ]
-        # double check it is gone
-        assert len(post_jupyter_containers) == 0
+        deleted = delete(session, delete_url, headers=delete_headers)
+        assert deleted
+
+        # Remove the stopped container
+        spawned_container.stop()
+        spawned_container.wait()
+        spawned_container.remove()
+
+        deleted_container = get_container(client, container_name)
+        assert deleted_container is None
 
 
 jhub_dynamic_config_path = join(config_path, "jhub", "ldap_person_dynamic_attr_hook.py")
@@ -252,12 +246,12 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
     username = "a-new-dynamic-user"
     auth_headers = {"Remote-User": username}
     assert wait_for_site(JHUB_URL, valid_status_code=401) is True
-    with requests.Session() as s:
+    with requests.Session() as session:
         # Login
-        login_response = s.post(JHUB_URL + "/hub/login", headers=auth_headers)
+        login_response = session.post(JHUB_URL + "/hub/login", headers=auth_headers)
         assert login_response.status_code == 200
 
-        resp = s.get(JHUB_URL + "/hub/home")
+        resp = session.get(JHUB_URL + "/hub/home")
         assert resp.status_code == 200
 
         desc = "The first description"
@@ -268,31 +262,26 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
             + username
         )
         # Pass LDAP DN for creation on spawn
-        post_dn = s.post(
+        post_dn = session.post(
             JHUB_URL + "/hub/user-data", json={"data": {"PersonDN": dn_str}}
         )
         assert post_dn.status_code == 200
 
         # Spawn notebook
-        spawn_response = s.post(JHUB_URL + "/hub/spawn")
+        spawn_response = session.post(JHUB_URL + "/hub/spawn")
         assert spawn_response.status_code == 200
 
-        container_name = "jupyter-" + username
-        spawned = False
-        wait_attempts = 20
-        while not spawned and wait_attempts > 0:
-            try:
-                client.containers.get(container_name)
-                spawned = True
-            except NotFound:
-                wait_attempts -= 1
+        container_name = "{}-{}".format("jupyter", username)
+        wait_min = 5
+        if not wait_for_container(client, container_name, minutes=wait_min):
+            raise RuntimeError(
+                "No container with name: {} appeared within: {} minutes".format(
+                    service_name, wait_min
+                )
+            )
 
-        post_spawn_containers = [
-            jup_container
-            for jup_container in client.containers.list()
-            if "jupyter-" in jup_container.name
-        ]
-        assert len(post_spawn_containers) > 0
+        spawned_container = get_container(client, container_name)
+        assert spawned_container is not None
 
         # Search openldap for person
         search_base = "dc=example,dc=org"
@@ -325,39 +314,33 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
         assert attributes["description"] == [desc]
 
         # Check that the notebook has the description env
-        user_container = client.containers.get(container_name)
-        container_desc = user_container.attrs["Config"]["Env"][0]
-        assert "description=" + desc == container_desc
+        spawned_container = get_container(client, container_name)
+        container_desc = get_container_env(spawned_container, env_key="description")
+        assert desc == container_desc
 
-        container_static_desc = user_container.attrs["Config"]["Env"][1]
-        assert "static_description=Static description" == container_static_desc
-
-        # Teardown notebook
-        resp = s.delete(
-            JHUB_URL + "/hub/api/users/{}/server".format(username),
-            headers={"Referer": "{}/hub/".format(JHUB_URL)},
+        container_static_desc = get_container_env(
+            spawned_container, env_key="static_description"
         )
-        assert resp.status_code == 204
-        user_container.stop()
-        user_container.wait()
-        user_container.remove()
+        assert "Static description" == container_static_desc
 
-        wait_attempts = 20
-        removed = False
-        while not removed and wait_attempts > 0:
-            try:
-                client.containers.get(container_name)
-            except NotFound:
-                removed = True
-            wait_attempts -= 1
+        # Shutdown the container
+        delete_headers = {"Referer": urljoin(JHUB_URL, "/hub/"), "Origin": JHUB_URL}
 
-        post_jupyter_containers = [
-            jup_container
-            for jup_container in client.containers.list()
-            if "jupyter-" in jup_container.name
-        ]
-        # double check it is gone
-        assert len(post_jupyter_containers) == 0
+        jhub_user = get_container_user(spawned_container)
+        assert jhub_user is not None
+        assert username == jhub_user
+        delete_url = urljoin(JHUB_URL, "/hub/api/users/{}/server".format(jhub_user))
+
+        deleted = delete(session, delete_url, headers=delete_headers)
+        assert deleted
+
+        # Remove the stopped container
+        spawned_container.stop()
+        spawned_container.wait()
+        spawned_container.remove()
+
+        deleted_container = get_container(client, container_name)
+        assert deleted_container is None
 
 
 jhub_obj_spw_config_path = join(config_path, "jhub", "ldap_object_spawner_hook.py")
@@ -396,12 +379,12 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
     username = "mynewuser"
     auth_headers = {"Remote-User": username}
     assert wait_for_site(JHUB_URL, valid_status_code=401) is True
-    with requests.Session() as s:
+    with requests.Session() as session:
         # Login
-        login_response = s.post(JHUB_URL + "/hub/login", headers=auth_headers)
+        login_response = session.post(JHUB_URL + "/hub/login", headers=auth_headers)
         assert login_response.status_code == 200
 
-        resp = s.get(JHUB_URL + "/hub/home")
+        resp = session.get(JHUB_URL + "/hub/home")
         assert resp.status_code == 200
 
         desc = "The first description"
@@ -412,65 +395,57 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
             + username
         )
         # Pass LDAP DN for creation on spawn
-        post_dn = s.post(
+        post_dn = session.post(
             JHUB_URL + "/hub/user-data", json={"data": {"PersonDN": dn_str}}
         )
         assert post_dn.status_code == 200
 
         # Spawn notebook
-        spawn_response = s.post(JHUB_URL + "/hub/spawn")
+        spawn_response = session.post(JHUB_URL + "/hub/spawn")
         assert spawn_response.status_code == 200
 
-        container_name = "jupyter-" + username
-        spawned = False
-        wait_attempts = 20
-        while not spawned and wait_attempts > 0:
-            try:
-                client.containers.get(container_name)
-                spawned = True
-            except NotFound:
-                wait_attempts -= 1
+        container_name = "{}-{}".format("jupyter", username)
+        wait_min = 5
+        if not wait_for_container(client, container_name, minutes=wait_min):
+            raise RuntimeError(
+                "No container with name: {} appeared within: {} minutes".format(
+                    service_name, wait_min
+                )
+            )
 
-        # Check that the notebook has the NB_USER env
-        user_container = client.containers.get(container_name)
-        container_nbuser = user_container.attrs["Config"]["Env"][0]
-        assert "NB_USER=" + username == container_nbuser
+        spawned_container = get_container(client, container_name)
+        assert spawned_container is not None
 
-        # Teardown notebook
-        resp = s.delete(
-            JHUB_URL + "/hub/api/users/{}/server".format(username),
-            headers={"Referer": "{}/hub/".format(JHUB_URL)},
-        )
-        assert resp.status_code == 204
-        user_container.stop()
-        user_container.wait()
-        user_container.remove()
+        # Shutdown the container
+        delete_headers = {"Referer": urljoin(JHUB_URL, "/hub/"), "Origin": JHUB_URL}
 
-        wait_attempts = 20
-        removed = False
-        while not removed and wait_attempts > 0:
-            try:
-                client.containers.get(container_name)
-            except NotFound:
-                removed = True
-            wait_attempts -= 1
+        jhub_user = get_container_user(spawned_container)
+        assert jhub_user is not None
+        assert username == jhub_user
+        delete_url = urljoin(JHUB_URL, "/hub/api/users/{}/server".format(jhub_user))
 
-        post_jupyter_containers = [
-            jup_container
-            for jup_container in client.containers.list()
-            if "jupyter-" in jup_container.name
-        ]
-        # double check it is gone
-        assert len(post_jupyter_containers) == 0
+        deleted = delete(session, delete_url, headers=delete_headers)
+        assert deleted
+
+        # Remove the stopped container
+        spawned_container.stop()
+        spawned_container.wait()
+        spawned_container.remove()
+
+        deleted_container = get_container(client, container_name)
+        assert deleted_container is None
+
+        ####
 
         # Respawn, ensure that it is loaded correctly from DIT
-        spawn_response = s.post(JHUB_URL + "/hub/spawn")
+        spawn_response = session.post(JHUB_URL + "/hub/spawn")
         assert spawn_response.status_code == 200
 
         # Validate that the env is still correct
-        user_container = client.containers.get(container_name)
-        container_nbuser = user_container.attrs["Config"]["Env"][0]
-        assert "NB_USER=" + username == container_nbuser
+        spawned_container = get_container(client, container_name)
+        jhub_user = get_container_user(spawned_container)
+        assert jhub_user is not None
+        assert username == jhub_user
 
         # Validate that the ldap DIT still only has 1 entry
         search_base = "dc=example,dc=org"
@@ -506,29 +481,21 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
         assert attributes["cn"] == [username]
         assert attributes["uid"] == [username]
 
-        # Teardown notebook
-        resp = s.delete(
-            JHUB_URL + "/hub/api/users/{}/server".format(username),
-            headers={"Referer": "{}/hub/".format(JHUB_URL)},
-        )
-        assert resp.status_code == 204
-        user_container.stop()
-        user_container.wait()
-        user_container.remove()
+        # Shutdown the container
+        # Delete the spawned service
+        delete_headers = {"Referer": urljoin(JHUB_URL, "/hub/"), "Origin": JHUB_URL}
 
-        wait_attempts = 20
-        removed = False
-        while not removed and wait_attempts > 0:
-            try:
-                client.containers.get(container_name)
-            except NotFound:
-                removed = True
-            wait_attempts -= 1
+        jhub_user = get_container_user(spawned_container)
+        assert jhub_user is not None
+        delete_url = urljoin(JHUB_URL, "/hub/api/users/{}/server".format(jhub_user))
 
-        post_jupyter_containers = [
-            jup_container
-            for jup_container in client.containers.list()
-            if "jupyter-" in jup_container.name
-        ]
-        # double check it is gone
-        assert len(post_jupyter_containers) == 0
+        deleted = delete(session, delete_url, headers=delete_headers)
+        assert deleted
+
+        # Remove the stopped container
+        spawned_container.stop()
+        spawned_container.wait()
+        spawned_container.remove()
+
+        deleted_container = get_container(client, container_name)
+        assert deleted_container is None
