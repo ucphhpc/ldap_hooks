@@ -17,7 +17,7 @@ c.JupyterHub.port = 80
 
 # Spawner setup
 c.JupyterHub.spawner_class = "dockerspawner.DockerSpawner"
-c.DockerSpawner.image = "nielsbohr/base-notebook:latest"
+c.DockerSpawner.image = "ucphhpc/base-notebook:latest"
 c.DockerSpawner.pre_spawn_hook = setup_ldap_entry_hook
 
 # Authenticator setup

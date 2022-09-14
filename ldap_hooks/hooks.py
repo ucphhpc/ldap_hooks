@@ -31,7 +31,6 @@ SEARCH_RESULT_OPERATION_ACTIONS = (INCREMENT_ATTRIBUTE,)
 class LDAP(LoggingConfigurable):
 
     url = Unicode(
-        trait=Unicode(),
         allow_none=False,
         config=True,
         help=dedent(
@@ -42,7 +41,6 @@ class LDAP(LoggingConfigurable):
     )
 
     user = Unicode(
-        trait=Unicode(),
         allow_none=False,
         config=True,
         help=dedent(
@@ -54,7 +52,6 @@ class LDAP(LoggingConfigurable):
     )
 
     password = Unicode(
-        trait=Unicode(),
         allow_none=True,
         config=True,
         help=dedent(
@@ -65,7 +62,6 @@ class LDAP(LoggingConfigurable):
     )
 
     ssl_cert_path = Unicode(
-        trait=Unicode(),
         allow_none=True,
         config=True,
         help=dedent(
@@ -77,7 +73,6 @@ class LDAP(LoggingConfigurable):
     )
 
     base_dn = Unicode(
-        trait=Unicode(),
         allow_none=False,
         config=True,
         help=dedent(
@@ -99,8 +94,8 @@ class LDAP(LoggingConfigurable):
     )
 
     object_attributes = Dict(
-        trait=Unicode(),
-        traits={Unicode(): Unicode()},
+        value_trait=Unicode(),
+        key_trait=Unicode(),
         default_value={},
         help=dedent(
             """
@@ -121,8 +116,8 @@ class LDAP(LoggingConfigurable):
     )
 
     replace_object_with = Dict(
-        trait=Unicode(),
-        traits={Unicode(): Unicode()},
+        value_trait=Unicode(),
+        key_trait=Unicode(),
         default_value={},
         help=dedent(
             """
@@ -150,7 +145,6 @@ class LDAP(LoggingConfigurable):
     )
 
     submit_spawner_attribute = Unicode(
-        trait=Unicode(),
         allow_none=False,
         config=True,
         default_value=None,
@@ -172,7 +166,6 @@ class LDAP(LoggingConfigurable):
     )
 
     submit_spawner_attribute_keys = Tuple(
-        trait=Unicode(),
         allow_none=True,
         config=True,
         default_value=(),
@@ -189,8 +182,8 @@ class LDAP(LoggingConfigurable):
     )
 
     dynamic_attributes = Dict(
-        trait=Unicode(),
-        traits={Unicode(): Unicode()},
+        value_trait=Unicode(),
+        key_trait=Unicode(),
         default_value={},
         help=dedent(
             """
@@ -202,7 +195,6 @@ class LDAP(LoggingConfigurable):
 
     search_attribute_queries = List(
         trait=Dict(),
-        traits=[{Unicode(): Unicode()}],
         default_value=[],
         help=dedent(
             """
@@ -213,8 +205,8 @@ class LDAP(LoggingConfigurable):
     )
 
     search_result_operations = Dict(
-        trait=Unicode(),
-        traits={Unicode(): Dict()},
+        value_trait=Dict(),
+        key_trait=Unicode(),
         default_value={},
         help=dedent(
             """
@@ -229,8 +221,8 @@ class LDAP(LoggingConfigurable):
     )
 
     set_spawner_attributes = Dict(
-        trait=Unicode(),
-        traits={Unicode(): Unicode()},
+        value_trait=Unicode(),
+        key_trait=Unicode(),
         default_value={},
         help=dedent(
             """
