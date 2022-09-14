@@ -83,7 +83,7 @@ class LDAP(LoggingConfigurable):
 
     object_classes = List(
         trait=Unicode(),
-        default_value=None,
+        default_value=[],
         allow_none=False,
         config=True,
         help=dedent(
