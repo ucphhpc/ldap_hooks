@@ -28,8 +28,6 @@ dockerpush:
 
 clean:
 	$(MAKE) dockerclean
-	$(MAKE) distclean
-	$(MAKE) venv-clean
 	rm -fr .env
 	rm -fr .pytest_cache
 	rm -fr tests/__pycache__
@@ -44,12 +42,16 @@ maintainer-clean:
 	@echo 'This command is intended for maintainers to use; it'
 	@echo 'deletes files that may need special tools to rebuild.'
 	$(MAKE) distclean
+	$(MAKE) venv-clean
 
 install-dev:
 	$(VENV)/pip install -r requirements-dev.txt
 
 install-dep:
 	$(VENV)/pip install -r requirements.txt
+
+uninstall-dep:
+	$(VENV)/pip uninstall -r requirements.txt
 
 install:
 	$(MAKE) install-dep
