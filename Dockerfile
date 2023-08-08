@@ -1,4 +1,4 @@
-FROM jupyterhub/jupyterhub:3.0
+FROM jupyterhub/jupyterhub:4.0.1
 
 ADD ldap_hooks /app/ldap_hooks
 ADD setup.py /app/setup.py
