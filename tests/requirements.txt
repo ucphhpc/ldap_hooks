@@ -1,7 +1,7 @@
-requests==2.31.0
-docker==6.0.0
-docutils==0.18.1
+requests=="2.31.0"
+docker=="6.0.0"
+docutils=="0.18.1"
 flake8>="4.0.*"
 autopep8>="1.6.*"
-gen==0.1
-pytest==6.2.5
+gen=="0.1"
+pytest=="6.2.5"
