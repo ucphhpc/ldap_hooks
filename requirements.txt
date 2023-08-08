@@ -1,4 +1,4 @@
-ldap3>=2.5.*
-traitlets>=5.3.*
-gen>=0.*
-tornado>=6.0.*
+ldap3>="2.5.*"
+traitlets>="5.3.*"
+gen>="0.*"
+tornado>="6.0.*"
