@@ -149,7 +149,7 @@ def test_ldap_person_hook(build_image, network, containers):
         dn_str = "/telephoneNumber=23012303403/SN=My Surname/CN=" + username
         # Pass LDAP DN for creation on spawn
         post_dn = session.post(
-            JHUB_URL + "/hub/user-data",
+            JHUB_URL + "/hub/set-user-data",
             json={"data": {"PersonDN": dn_str}},
             params={'_xsrf': session.cookies['_xsrf']},
         )
@@ -279,7 +279,7 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
         )
         # Pass LDAP DN for creation on spawn
         post_dn = session.post(
-            JHUB_URL + "/hub/user-data",
+            JHUB_URL + "/hub/set-user-data",
             json={"data": {"PersonDN": dn_str}},
             params={'_xsrf': session.cookies['_xsrf']},
         )
@@ -421,14 +421,17 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
         )
         # Pass LDAP DN for creation on spawn
         post_dn = session.post(
-            JHUB_URL + "/hub/user-data",
+            JHUB_URL + "/hub/set-user-data",
             json={"data": {"PersonDN": dn_str}},
             params={'_xsrf': session.cookies['_xsrf']},
         )
         assert post_dn.status_code == 200
 
         # Spawn notebook
-        spawn_response = session.post(JHUB_URL + "/hub/spawn")
+        spawn_response = session.post(
+            JHUB_URL + "/hub/spawn",
+            params={'_xsrf': session.cookies['_xsrf']}
+        )
         assert spawn_response.status_code == 200
 
         container_name = "{}-{}".format("jupyter", username)
@@ -463,7 +466,10 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
         ####
 
         # Respawn, ensure that it is loaded correctly from DIT
-        spawn_response = session.post(JHUB_URL + "/hub/spawn")
+        spawn_response = session.post(
+            JHUB_URL + "/hub/spawn",
+            params={'_xsrf': session.cookies['_xsrf']}
+        )
         assert spawn_response.status_code == 200
 
         # Validate that the env is still correct
