@@ -287,7 +287,7 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
 
         # Spawn notebook
         spawn_response = session.post(
-            JHUB_URL + "/hub/spawn"
+            JHUB_URL + "/hub/spawn",
             params={'_xsrf': session.cookies['_xsrf']}
         )
         assert spawn_response.status_code == 200
