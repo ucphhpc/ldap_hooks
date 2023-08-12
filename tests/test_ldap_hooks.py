@@ -132,8 +132,15 @@ def test_ldap_person_hook(build_image, network, containers):
     auth_headers = {"Remote-User": username}
     assert wait_for_site(JHUB_URL, valid_status_code=401) is True
     with requests.Session() as session:
+        # Refresh cookies
+        session.get(JHUB_URL)
+
         # Login
-        login_response = session.post(JHUB_URL + "/hub/login", headers=auth_headers)
+        login_response = session.post(
+            JHUB_URL + "/hub/login",
+            headers=auth_headers,
+            params={'_xsrf': session.cookies['_xsrf']}
+        )
         assert login_response.status_code == 200
 
         resp = session.get(JHUB_URL + "/hub/home")
@@ -142,12 +149,17 @@ def test_ldap_person_hook(build_image, network, containers):
         dn_str = "/telephoneNumber=23012303403/SN=My Surname/CN=" + username
         # Pass LDAP DN for creation on spawn
         post_dn = session.post(
-            JHUB_URL + "/hub/user-data", json={"data": {"PersonDN": dn_str}}
+            JHUB_URL + "/hub/user-data",
+            json={"data": {"PersonDN": dn_str}},
+            params={'_xsrf': session.cookies['_xsrf']},
         )
         assert post_dn.status_code == 200
 
         # Spawn notebook
-        spawn_response = session.post(JHUB_URL + "/hub/spawn")
+        spawn_response = session.post(
+            JHUB_URL + "/hub/spawn",
+            params={'_xsrf': session.cookies['_xsrf']}
+        )
         assert spawn_response.status_code == 200
 
         container_name = "{}-{}".format("jupyter", username)
@@ -155,7 +167,7 @@ def test_ldap_person_hook(build_image, network, containers):
         if not wait_for_container(client, container_name, minutes=wait_min):
             raise RuntimeError(
                 "No container with name: {} appeared within: {} minutes".format(
-                    service_name, wait_min
+                    container_name, wait_min
                 )
             )
 
@@ -191,14 +203,12 @@ def test_ldap_person_hook(build_image, network, containers):
 
         # Shutdown the container
         # Delete the spawned service
-        delete_headers = {"Referer": urljoin(JHUB_URL, "/hub/"), "Origin": JHUB_URL}
-
         jhub_user = get_container_user(spawned_container)
         assert jhub_user is not None
         assert username == jhub_user
         delete_url = urljoin(JHUB_URL, "/hub/api/users/{}/server".format(jhub_user))
 
-        deleted = delete(session, delete_url, headers=delete_headers)
+        deleted = delete(session, delete_url)
         assert deleted
 
         # Remove the stopped container
@@ -247,8 +257,14 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
     auth_headers = {"Remote-User": username}
     assert wait_for_site(JHUB_URL, valid_status_code=401) is True
     with requests.Session() as session:
+        # Refresh cookies
+        session.get(JHUB_URL)
         # Login
-        login_response = session.post(JHUB_URL + "/hub/login", headers=auth_headers)
+        login_response = session.post(
+            JHUB_URL + "/hub/login",
+            headers=auth_headers,
+            params={'_xsrf': session.cookies['_xsrf']},
+        )
         assert login_response.status_code == 200
 
         resp = session.get(JHUB_URL + "/hub/home")
@@ -263,12 +279,17 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
         )
         # Pass LDAP DN for creation on spawn
         post_dn = session.post(
-            JHUB_URL + "/hub/user-data", json={"data": {"PersonDN": dn_str}}
+            JHUB_URL + "/hub/user-data",
+            json={"data": {"PersonDN": dn_str}},
+            params={'_xsrf': session.cookies['_xsrf']},
         )
         assert post_dn.status_code == 200
 
         # Spawn notebook
-        spawn_response = session.post(JHUB_URL + "/hub/spawn")
+        spawn_response = session.post(
+            JHUB_URL + "/hub/spawn"
+            params={'_xsrf': session.cookies['_xsrf']}
+        )
         assert spawn_response.status_code == 200
 
         container_name = "{}-{}".format("jupyter", username)
@@ -276,7 +297,7 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
         if not wait_for_container(client, container_name, minutes=wait_min):
             raise RuntimeError(
                 "No container with name: {} appeared within: {} minutes".format(
-                    service_name, wait_min
+                    container_name, wait_min
                 )
             )
 
@@ -324,14 +345,12 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
         assert "Static description" == container_static_desc
 
         # Shutdown the container
-        delete_headers = {"Referer": urljoin(JHUB_URL, "/hub/"), "Origin": JHUB_URL}
-
         jhub_user = get_container_user(spawned_container)
         assert jhub_user is not None
         assert username == jhub_user
         delete_url = urljoin(JHUB_URL, "/hub/api/users/{}/server".format(jhub_user))
 
-        deleted = delete(session, delete_url, headers=delete_headers)
+        deleted = delete(session, delete_url)
         assert deleted
 
         # Remove the stopped container
@@ -380,8 +399,14 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
     auth_headers = {"Remote-User": username}
     assert wait_for_site(JHUB_URL, valid_status_code=401) is True
     with requests.Session() as session:
+        # Refresh cookies
+        session.get(JHUB_URL)
         # Login
-        login_response = session.post(JHUB_URL + "/hub/login", headers=auth_headers)
+        login_response = session.post(
+            JHUB_URL + "/hub/login",
+            headers=auth_headers,
+            params={'_xsrf': session.cookies['_xsrf']}
+        )
         assert login_response.status_code == 200
 
         resp = session.get(JHUB_URL + "/hub/home")
@@ -396,7 +421,9 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
         )
         # Pass LDAP DN for creation on spawn
         post_dn = session.post(
-            JHUB_URL + "/hub/user-data", json={"data": {"PersonDN": dn_str}}
+            JHUB_URL + "/hub/user-data",
+            json={"data": {"PersonDN": dn_str}},
+            params={'_xsrf': session.cookies['_xsrf']},
         )
         assert post_dn.status_code == 200
 
@@ -409,7 +436,7 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
         if not wait_for_container(client, container_name, minutes=wait_min):
             raise RuntimeError(
                 "No container with name: {} appeared within: {} minutes".format(
-                    service_name, wait_min
+                    container_name, wait_min
                 )
             )
 
@@ -417,14 +444,12 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
         assert spawned_container is not None
 
         # Shutdown the container
-        delete_headers = {"Referer": urljoin(JHUB_URL, "/hub/"), "Origin": JHUB_URL}
-
         jhub_user = get_container_user(spawned_container)
         assert jhub_user is not None
         assert username == jhub_user
         delete_url = urljoin(JHUB_URL, "/hub/api/users/{}/server".format(jhub_user))
 
-        deleted = delete(session, delete_url, headers=delete_headers)
+        deleted = delete(session, delete_url)
         assert deleted
 
         # Remove the stopped container
@@ -483,13 +508,11 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
 
         # Shutdown the container
         # Delete the spawned service
-        delete_headers = {"Referer": urljoin(JHUB_URL, "/hub/"), "Origin": JHUB_URL}
-
         jhub_user = get_container_user(spawned_container)
         assert jhub_user is not None
         delete_url = urljoin(JHUB_URL, "/hub/api/users/{}/server".format(jhub_user))
 
-        deleted = delete(session, delete_url, headers=delete_headers)
+        deleted = delete(session, delete_url)
         assert deleted
 
         # Remove the stopped container

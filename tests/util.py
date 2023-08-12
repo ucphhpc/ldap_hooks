@@ -58,13 +58,13 @@ def wait_for_site(
     return False
 
 
-def delete(session, url, timeout=60, headers=None, valid_status_code=204):
-    if not headers:
-        headers = {}
+def delete(session, url, timeout=60, params=None, valid_status_code=204, **kwargs):
+    if not params:
+        params = {'_xsrf': session.cookies['_xsrf']}
 
     attempts = 0
     while attempts < timeout:
-        resp = session.delete(url, headers=headers)
+        resp = session.delete(url, params=params, **kwargs)
         if resp.status_code == valid_status_code:
             return True
         attempts += 1
