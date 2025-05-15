@@ -33,7 +33,7 @@ jhub_image_spec = {"path": docker_path, "tag": JHUB_IMAGE, "rm": "True", "pull":
 
 LDAP_IMAGE_PATH = "osixia/openldap"
 LDAP_IMAGE_NAME = "openldap"
-LDAP_IMAGE_TAG = "1.2.3"
+LDAP_IMAGE_TAG = "1.5.0"
 LDAP_IMAGE = "".join([LDAP_IMAGE_PATH, ":", LDAP_IMAGE_TAG])
 
 JHUB_URL = "http://127.0.0.1:{}".format(PORT)
