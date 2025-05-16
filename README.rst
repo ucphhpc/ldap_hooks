@@ -1,8 +1,7 @@
 ==========
 ldap_hooks
 ==========
-.. image:: https://travis-ci.org/rasmunk/ldap_hooks.svg?branch=master
-    :target: https://travis-ci.org/rasmunk/ldap_hooks
+
 .. image:: https://badge.fury.io/py/ldap-hooks.svg
     :target: https://badge.fury.io/py/ldap-hooks
 
