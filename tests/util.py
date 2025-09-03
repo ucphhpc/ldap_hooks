@@ -60,7 +60,7 @@ def wait_for_site(
 
 def delete(session, url, timeout=60, params=None, valid_status_code=204, **kwargs):
     if not params:
-        params = {'_xsrf': session.cookies['_xsrf']}
+        params = {"_xsrf": session.cookies["_xsrf"]}
 
     attempts = 0
     while attempts < timeout:

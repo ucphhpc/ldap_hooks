@@ -15,7 +15,6 @@ def read_req(name):
     return [req.strip() for req in read(path).splitlines() if req.strip()]
 
 
-
 version_ns = {}
 version_path = os.path.join(cur_dir, "ldap_hooks", "_version.py")
 version_content = read(version_path)

@@ -1,4 +1,5 @@
 """A simple jupyter config file for testing the authenticator."""
+
 from ldap_hooks import setup_ldap_entry_hook
 from ldap_hooks import LDAP, SPAWNER_USER_ATTRIBUTE, LDAP_FIRST_SEARCH_ATTRIBUTE_QUERY
 

@@ -139,7 +139,7 @@ def test_ldap_person_hook(build_image, network, containers):
         login_response = session.post(
             JHUB_URL + "/hub/login",
             headers=auth_headers,
-            params={'_xsrf': session.cookies['_xsrf']}
+            params={"_xsrf": session.cookies["_xsrf"]},
         )
         assert login_response.status_code == 200
 
@@ -151,14 +151,13 @@ def test_ldap_person_hook(build_image, network, containers):
         post_dn = session.post(
             JHUB_URL + "/hub/set-user-data",
             json={"data": {"PersonDN": dn_str}},
-            params={'_xsrf': session.cookies['_xsrf']},
+            params={"_xsrf": session.cookies["_xsrf"]},
         )
         assert post_dn.status_code == 200
 
         # Spawn notebook
         spawn_response = session.post(
-            JHUB_URL + "/hub/spawn",
-            params={'_xsrf': session.cookies['_xsrf']}
+            JHUB_URL + "/hub/spawn", params={"_xsrf": session.cookies["_xsrf"]}
         )
         assert spawn_response.status_code == 200
 
@@ -263,7 +262,7 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
         login_response = session.post(
             JHUB_URL + "/hub/login",
             headers=auth_headers,
-            params={'_xsrf': session.cookies['_xsrf']},
+            params={"_xsrf": session.cookies["_xsrf"]},
         )
         assert login_response.status_code == 200
 
@@ -281,14 +280,13 @@ def test_ldap_person_dynamic_attr_hook(build_image, network, containers):
         post_dn = session.post(
             JHUB_URL + "/hub/set-user-data",
             json={"data": {"PersonDN": dn_str}},
-            params={'_xsrf': session.cookies['_xsrf']},
+            params={"_xsrf": session.cookies["_xsrf"]},
         )
         assert post_dn.status_code == 200
 
         # Spawn notebook
         spawn_response = session.post(
-            JHUB_URL + "/hub/spawn",
-            params={'_xsrf': session.cookies['_xsrf']}
+            JHUB_URL + "/hub/spawn", params={"_xsrf": session.cookies["_xsrf"]}
         )
         assert spawn_response.status_code == 200
 
@@ -405,7 +403,7 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
         login_response = session.post(
             JHUB_URL + "/hub/login",
             headers=auth_headers,
-            params={'_xsrf': session.cookies['_xsrf']}
+            params={"_xsrf": session.cookies["_xsrf"]},
         )
         assert login_response.status_code == 200
 
@@ -423,14 +421,13 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
         post_dn = session.post(
             JHUB_URL + "/hub/set-user-data",
             json={"data": {"PersonDN": dn_str}},
-            params={'_xsrf': session.cookies['_xsrf']},
+            params={"_xsrf": session.cookies["_xsrf"]},
         )
         assert post_dn.status_code == 200
 
         # Spawn notebook
         spawn_response = session.post(
-            JHUB_URL + "/hub/spawn",
-            params={'_xsrf': session.cookies['_xsrf']}
+            JHUB_URL + "/hub/spawn", params={"_xsrf": session.cookies["_xsrf"]}
         )
         assert spawn_response.status_code == 200
 
@@ -467,8 +464,7 @@ def test_dynamic_object_spawner_attributes(build_image, network, containers):
 
         # Respawn, ensure that it is loaded correctly from DIT
         spawn_response = session.post(
-            JHUB_URL + "/hub/spawn",
-            params={'_xsrf': session.cookies['_xsrf']}
+            JHUB_URL + "/hub/spawn", params={"_xsrf": session.cookies["_xsrf"]}
         )
         assert spawn_response.status_code == 200
 
