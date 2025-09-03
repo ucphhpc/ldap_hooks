@@ -1,7 +1,8 @@
 import os
 from setuptools import setup, find_packages
 
-here = os.path.dirname(__file__)
+
+cur_dir = os.path.realpath(os.path.dirname(__file__))
 
 
 def read(path):
@@ -10,13 +11,15 @@ def read(path):
 
 
 def read_req(name):
-    path = os.path.join(here, name)
+    path = os.path.join(cur_dir, name)
     return [req.strip() for req in read(path).splitlines() if req.strip()]
 
 
+
 version_ns = {}
-with open(os.path.join(here, "version.py")) as f:
-    exec(f.read(), {}, version_ns)
+version_path = os.path.join(cur_dir, "ldap_hooks", "_version.py")
+version_content = read(version_path)
+exec(version_content, {}, version_ns)
 
 long_description = open("README.rst").read()
 setup(
