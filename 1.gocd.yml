@@ -1,10 +1,9 @@
 environments:
   ldap_hooks:
-    environments:
+    environment_variables:
       GIT_USER: "{{SECRET:[github][username]}}"
       PYPI_USERNAME: "{{SECRET:[ldap_hooks][username]}}"
       PYPI_PASSWORD: "{{SECRET:[ldap_hooks][password]}}"
-      TEST_VAR: asdadaD
     pipelines:
       - ldap_hooks
 pipelines:
