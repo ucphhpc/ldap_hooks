@@ -1,5 +1,5 @@
 environments:
-  bare_metal_pypi_package:
+  ldap_hooks:
     environments:
       GIT_USER: "{{SECRET:[github][username]}}"
       PYPI_USERNAME: "{{SECRET:[ldap_hooks][username]}}"
