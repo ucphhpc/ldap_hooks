@@ -18,6 +18,9 @@ c.DockerSpawner.network_name = "jhub_ldap_network"
 # usage of the - character will be automatically escaped by the escape string '-d2'
 c.DockerSpawner.escape = "legacy"
 
+# https://jupyterhub.readthedocs.io/en/5.2.1/reference/changelog.html#id17
+# Introduced in 5.0
+c.Authenticator.allow_all = True
 # Allow .data to be set by authenticated users
 c.HeaderAuthenticator.user_external_allow_attributes = ["data"]
 

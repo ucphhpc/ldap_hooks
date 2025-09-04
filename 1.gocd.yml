@@ -2,8 +2,8 @@ environments:
   bare_metal_pypi_package:
     environments:
       GIT_USER: "{{SECRET:[github][username]}}"
-      PYPI_USERNAME: '{{SECRET:[pypi][ldap_hooks][username]}}'
-      PYPI_PASSWORD: '{{SECRET:[pypi][ldap_hooks][password]}}'
+      PYPI_USERNAME: '{{SECRET:[ldap_hooks][username]}}'
+      PYPI_PASSWORD: '{{SECRET:[ldap_hooks][password]}}'
     pipelines:
       - ldap_hooks
 pipelines:
@@ -31,4 +31,6 @@ pipelines:
       SRC_DIRECTORY: ldap_hooks
       TEST_DIRECTORY: ldap_hooks
       PUSH_DIRECTORY: publish-python-scripts
+      PYPI_USERNAME: ${PYPI_USERNAME}
+      PYPI_PASSWORD: ${PYPI_PASSWORD}
     template: bare_metal_pypi_package
