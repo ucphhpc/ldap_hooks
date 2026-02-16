@@ -480,14 +480,12 @@ def update_spawner_attributes(spawner, spawner_attributes):
             setattr(spawner, spawner_attr, spawner_value)
 
 
-@gen.coroutine
-def hello_hook(spawner):
+async def hello_hook(spawner):
     spawner.log.info("Hello from hook")
     return True
 
 
-@gen.coroutine
-def setup_ldap_entry_hook(spawner):
+async def setup_ldap_entry_hook(spawner):
     instance = LDAP()
     # TODO, copy entire default config options dynamically
     instance.dynamic_attributes = copy.deepcopy(instance.dynamic_attributes)

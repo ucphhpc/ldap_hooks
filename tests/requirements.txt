@@ -3,5 +3,4 @@ docker==7.1.0
 docutils==0.21.2
 flake8==7.1.2
 autopep8==2.3.2
-gen==0.1
 pytest==7.4.4
