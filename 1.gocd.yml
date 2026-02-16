@@ -28,7 +28,9 @@ pipelines:
         destination: publish-python-scripts
     parameters:
       ARGS: ''
+      BUILD_MAKE_TARGET: dockerbuild
       BUILD_MAKE_ARGS: ''
+      TEST_MAKE_TARGET: test
       TEST_MAKE_ARGS: ''
       SRC_DIRECTORY: ldap_hooks
       TEST_DIRECTORY: ldap_hooks
