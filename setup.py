@@ -28,7 +28,7 @@ setup(
     "creating/retrieving LDAP DIT entries during spawn",
     long_description=long_description,
     author="Rasmus Munk",
-    author_email="munk1@live.dk",
+    author_email="code@munk0.dk",
     packages=find_packages(),
     url="https://github.com/rasmunk/ldap_hooks",
     license="MIT",
